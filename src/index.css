@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-base text-slate-100 antialiased;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+@layer components {
+  /* Склоподібна картка — базовий будівельний блок інтерфейсу */
+  .glass-card {
+    @apply backdrop-blur-md bg-slate-900/80 border border-cyan-500/20 rounded-2xl;
+  }
+
+  /* Текст із неоновим світінням */
+  .text-neon-glow {
+    @apply text-neon drop-shadow-neon;
+  }
+
+  /* Текст із золотим (VIP) світінням */
+  .text-premium-glow {
+    @apply text-premium drop-shadow-premium;
+  }
+}

@@ -1,0 +1,90 @@
+import { supabase } from './supabase'
+import { getTelegramUser } from './telegram'
+
+/** Мінімальна сума виводу, USDT. Тримати синхронізовано з RPC `request_withdrawal`. */
+export const MIN_WITHDRAWAL_USD = 2
+
+/** Комісія за вивід, частка від суми (0.05 = 5%). Тримати синхронізовано з RPC. */
+export const WITHDRAWAL_FEE_RATE = 0.05
+
+export type WithdrawalNetwork = 'TON' | 'TRC20'
+
+export function getWithdrawalFeeUsd(amountUsd: number): number {
+  return amountUsd * WITHDRAWAL_FEE_RATE
+}
+
+export function getWithdrawalNetAmountUsd(amountUsd: number): number {
+  return Math.max(0, amountUsd - getWithdrawalFeeUsd(amountUsd))
+}
+
+/** Дуже наближена перевірка формату TON-адреси (raw або user-friendly base64url). */
+export function isValidTonAddress(address: string): boolean {
+  const trimmed = address.trim()
+  return /^(-1|0):[a-fA-F0-9]{64}$/.test(trimmed) || /^[A-Za-z0-9_-]{48}$/.test(trimmed)
+}
+
+/** Дуже наближена перевірка формату TRC-20 (Tron) адреси. */
+export function isValidTrc20Address(address: string): boolean {
+  return /^T[A-Za-z0-9]{33}$/.test(address.trim())
+}
+
+export function isValidWithdrawalAddress(address: string, network: WithdrawalNetwork): boolean {
+  return network === 'TON' ? isValidTonAddress(address) : isValidTrc20Address(address)
+}
+
+export interface WithdrawalRequestInput {
+  amountUsd: number
+  walletAddress: string
+  network: WithdrawalNetwork
+}
+
+export interface WithdrawalRequestResult {
+  success: boolean
+  id?: string
+  error?: string
+}
+
+/**
+ * Створює заявку на вивід через RPC `request_withdrawal` (SECURITY DEFINER,
+ * див. supabase/migrations/*_transactions_ledger.sql). RPC сам знаходить
+ * або створює рядок у `users` за telegram_id, перевіряє deposit-lock
+ * (кидає виняток `deposit_required`, якщо в користувача ще немає жодного
+ * завершеного депозиту — див. {@link isDepositRequiredError}) і вставляє
+ * рядок у `transactions` зі статусом `pending` — анонімний ключ не має
+ * прямого доступу на запис до жодної з цих таблиць, тільки до цієї вузько
+ * окресленої функції.
+ */
+export async function createWithdrawalRequest(
+  input: WithdrawalRequestInput,
+): Promise<WithdrawalRequestResult> {
+  const telegramUser = getTelegramUser()
+  // Поза Telegram (напр. `npm run dev` у звичайному браузері) немає
+  // initDataUnsafe.user — підставляємо dev-заглушку, щоб форму можна було
+  // протестувати локально без Telegram-клієнта.
+  const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
+  const firstName = telegramUser?.first_name ?? 'Dev User'
+
+  if (!telegramId) {
+    return { success: false, error: 'no_telegram_user' }
+  }
+
+  const { data, error } = await supabase.rpc('request_withdrawal', {
+    p_telegram_id: telegramId,
+    p_first_name: firstName,
+    p_amount_usd: input.amountUsd,
+    p_wallet_address: input.walletAddress.trim(),
+    p_network: input.network,
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  const row = Array.isArray(data) ? data[0] : data
+  return { success: true, id: row?.id }
+}
+
+/** Чи це помилка "потрібен хоча б один завершений депозит" від RPC `request_withdrawal`. */
+export function isDepositRequiredError(errorMessage: string | undefined): boolean {
+  return Boolean(errorMessage?.includes('deposit_required'))
+}

@@ -1,0 +1,28 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import { TonConnectUIProvider } from '@tonconnect/ui-react'
+import './index.css'
+import './i18n'
+import { initTelegramWebApp } from './lib/telegram'
+import { UserStateProvider } from './context/UserStateContext'
+import App from './App.tsx'
+
+initTelegramWebApp()
+
+// TODO: public/tonconnect-manifest.json містить заглушкові url/iconUrl —
+// замінити на реальний домен застосунку перед продом (гаманці TON
+// перевіряють доступність цього маніфесту за адресою деплою).
+const tonConnectManifestUrl = new URL('/tonconnect-manifest.json', window.location.href).toString()
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <TonConnectUIProvider manifestUrl={tonConnectManifestUrl}>
+      <UserStateProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </UserStateProvider>
+    </TonConnectUIProvider>
+  </StrictMode>,
+)
