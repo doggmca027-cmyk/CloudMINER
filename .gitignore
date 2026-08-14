@@ -17,6 +17,10 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Supabase CLI local state (project ref cache etc. — no secrets, but machine-local)
+supabase/.temp
+supabase/.branches
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,0 +1,153 @@
+// Deno Edge Function: process-withdrawal
+//
+// Викликається ТІЛЬКИ з адмінки (WithdrawalsSection → resolveWithdrawal у
+// src/lib/admin.ts), коли адмін тисне "Подтвердить" на заявці виводу.
+// На відміну від решти admin_* дій (де достатньо одного SQL RPC),
+// підтвердження виводу тепер має РЕАЛЬНО відправити крипту користувачу —
+// це вимагає приватного ключа/мнемоніки, яких не повинно бути в браузері,
+// тож уся операція живе тут, у service_role-контексті Edge Function.
+//
+// Потік:
+//   1) admin_mark_withdrawal_processing — блокує заявку, pending -> processing
+//   2) залежно від network відправляємо крипту (TON jetton / TRC-20 USDT)
+//   3) переказ пройшов    -> admin_mark_withdrawal_completed (tx_hash, повідомлення користувачу)
+//      переказ НЕ пройшов -> admin_mark_withdrawal_failed (повертає баланс, повідомлення користувачу)
+//                            + сповіщення в канал транзакцій, щоб адмін одразу побачив збій
+//
+// СЕКРЕТИ: див. коментарі в _shared/tonPayout.ts і _shared/tronPayout.ts,
+// плюс TELEGRAM_BOT_TOKEN / TELEGRAM_TRANSACTIONS_CHANNEL_ID (спільні з
+// іншими функціями).
+//
+// ⚠️ Як і TON/Tron-інтеграції в check-*-deposits, реальна відправка крипти
+// (sendTonUsdtJetton / sendTronUsdt) НЕ перевірена проти живої мережі з
+// цього середовища — обов'язково протестувати маленькою сумою перед продом.
+
+import { createSupabaseAdminClient } from '../_shared/supabaseAdmin.ts'
+import { notifyTransactionsChannel } from '../_shared/telegram.ts'
+import { sendTonUsdtJetton } from '../_shared/tonPayout.ts'
+import { sendTronUsdt } from '../_shared/tronPayout.ts'
+
+interface ProcessWithdrawalRequest {
+  adminTelegramId?: number
+  transactionId?: string
+}
+
+interface ProcessingRow {
+  amount_usd: number
+  fee_usd: number
+  network: string
+  wallet_address: string
+  telegram_id: number
+}
+
+Deno.serve(async (req) => {
+  let body: ProcessWithdrawalRequest
+  try {
+    body = await req.json()
+  } catch {
+    return jsonResponse({ success: false, error: 'invalid_json' }, 400)
+  }
+
+  const { adminTelegramId, transactionId } = body
+  if (!adminTelegramId || !transactionId) {
+    return jsonResponse({ success: false, error: 'missing_parameters' }, 400)
+  }
+
+  const supabase = createSupabaseAdminClient()
+
+  // Крок 1: блокуємо заявку й переводимо pending -> processing. Звідси й
+  // до кінця функції жоден інший виклик (повторний клік "Подтвердить",
+  // паралельний запит) не зможе зачепити цю ж заявку — RPC сама кине
+  // withdrawal_already_resolved, якщо статус вже не 'pending'.
+  const { data: markData, error: markError } = await supabase.rpc('admin_mark_withdrawal_processing', {
+    p_admin_telegram_id: adminTelegramId,
+    p_transaction_id: transactionId,
+  })
+
+  if (markError) {
+    return jsonResponse({ success: false, error: markError.message }, 400)
+  }
+
+  const row = (Array.isArray(markData) ? markData[0] : markData) as ProcessingRow | undefined
+  if (!row) {
+    return jsonResponse({ success: false, error: 'withdrawal_not_found' }, 404)
+  }
+
+  const netAmountUsd = Number(row.amount_usd) - Number(row.fee_usd)
+
+  // Крок 2: власне переказ у блокчейні.
+  let txHash: string
+  try {
+    if (row.network === 'TON') {
+      txHash = await sendTonUsdtJetton(row.wallet_address, netAmountUsd)
+    } else if (row.network === 'TRC20') {
+      txHash = await sendTronUsdt(row.wallet_address, netAmountUsd)
+    } else {
+      throw new Error(`unsupported_network:${row.network}`)
+    }
+  } catch (err) {
+    console.error('[process-withdrawal] payout failed:', transactionId, err)
+    const errorMessage = String(err instanceof Error ? err.message : err)
+
+    // Крипта НЕ пішла (помилка сталась до/під час відправки) — безпечно
+    // повернути заявку в 'failed' і віддати гроші користувачу назад.
+    const { error: failError } = await supabase.rpc('admin_mark_withdrawal_failed', {
+      p_admin_telegram_id: adminTelegramId,
+      p_transaction_id: transactionId,
+      p_error: errorMessage,
+    })
+
+    if (failError) {
+      // Найгірший сценарій: не вдалось навіть відкотити заявку назад — вона
+      // лишається 'processing' без повернення балансу. Це потребує РУЧНОГО
+      // втручання (перевірити в БД, чи гроші справді не пішли, і вирішити
+      // вручну — повернути баланс чи повторити спробу).
+      console.error('[process-withdrawal] CRITICAL: rollback after payout error also failed:', failError)
+      await notifyTransactionsChannel(
+        `🆘 КРИТИЧНО: вивід <code>${transactionId}</code> завис у processing після помилки переказу, ` +
+          `і автоматичний відкат теж не спрацював (${failError.message}). Потрібна РУЧНА перевірка в БД.`,
+      )
+      return jsonResponse({ success: false, error: 'payout_and_rollback_failed', detail: errorMessage }, 500)
+    }
+
+    await notifyTransactionsChannel(
+      `⚠️ Автовыплата не прошла\nЗаявка: <code>${transactionId}</code>\nСеть: ${row.network}\n` +
+        `Сумма: ${netAmountUsd.toFixed(2)} USDT\nОшибка: ${errorMessage}\n` +
+        `Средства возвращены на баланс пользователя.`,
+    )
+    return jsonResponse({ success: false, error: 'payout_failed', detail: errorMessage }, 502)
+  }
+
+  // Крок 3: крипта пішла — фіксуємо завершення заявки.
+  const { error: completeError } = await supabase.rpc('admin_mark_withdrawal_completed', {
+    p_admin_telegram_id: adminTelegramId,
+    p_transaction_id: transactionId,
+    p_tx_hash: txHash,
+  })
+
+  if (completeError) {
+    // Гроші вже відправлені — НЕ намагаємось відкотити (повторне
+    // зарахування балансу тут створило б подвійну виплату). Просто гучно
+    // сигналимо, що потрібна ручна звірка статусу заявки.
+    console.error('[process-withdrawal] payout succeeded but mark-completed failed:', completeError)
+    await notifyTransactionsChannel(
+      `🆘 Вивід <code>${transactionId}</code> успішно відправлено (tx: <code>${txHash}</code>), ` +
+        `але не вдалось позначити заявку завершеною: ${completeError.message}. Перевірте вручну.`,
+    )
+    return jsonResponse({ success: true, txHash, warning: 'mark_completed_failed' })
+  }
+
+  await notifyTransactionsChannel(
+    `📤 Автовыплата\nСеть: ${row.network}\nПользователь: <code>${row.telegram_id}</code>\n` +
+      `Сумма: ${netAmountUsd.toFixed(2)} USDT\nTx: <code>${txHash}</code>`,
+  )
+
+  return jsonResponse({ success: true, txHash })
+})
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}

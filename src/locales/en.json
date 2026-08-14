@@ -207,11 +207,14 @@
       "title": "Withdrawal requests",
       "empty": "No pending withdrawal requests",
       "approve": "Approve",
+      "approving": "Sending payout...",
       "reject": "Reject",
       "reasonPlaceholder": "Rejection reason (optional)",
       "approveSuccess": "Request approved",
+      "approveSuccessWithHash": "Payout sent automatically. Hash: {{hash}}",
       "rejectSuccess": "Request rejected, funds refunded",
       "error": "Failed to process the request",
+      "payoutFailed": "Automatic payout failed — funds were refunded to the user's balance, request flagged for review",
       "totalDeposits": "Total deposits: {{amount}} USDT"
     },
     "tasks": {

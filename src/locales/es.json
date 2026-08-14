@@ -207,11 +207,14 @@
       "title": "Solicitudes de retiro",
       "empty": "No hay solicitudes de retiro pendientes",
       "approve": "Aprobar",
+      "approving": "Enviando pago...",
       "reject": "Rechazar",
       "reasonPlaceholder": "Motivo del rechazo (opcional)",
       "approveSuccess": "Solicitud aprobada",
+      "approveSuccessWithHash": "Pago enviado automáticamente. Hash: {{hash}}",
       "rejectSuccess": "Solicitud rechazada, fondos reembolsados",
       "error": "No se pudo procesar la solicitud",
+      "payoutFailed": "El pago automático falló — los fondos se reembolsaron al saldo del usuario, la solicitud quedó marcada para revisión",
       "totalDeposits": "Depósitos totales: {{amount}} USDT"
     },
     "tasks": {

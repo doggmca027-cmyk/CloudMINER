@@ -25,6 +25,9 @@ export default function WithdrawPanel() {
   const [address, setAddress] = useState('')
   const [status, setStatus] = useState<FormStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  // Показуємо повідомлення про блокування лише після того, як користувач
+  // реально спробував вивести кошти — не заздалегідь, при відкритті вкладки.
+  const [lockedAttempted, setLockedAttempted] = useState(false)
 
   // Поки профіль не завантажено, не блокуємо форму заздалегідь (щоб не
   // блимати помилковим "заблоковано" до першої відповіді Supabase) — RPC
@@ -36,7 +39,6 @@ export default function WithdrawPanel() {
   const hasEnoughBalance = hasValidAmount && amountNumber <= balanceUsd
   const hasValidAddress = address.trim().length > 0 && isValidWithdrawalAddress(address, network)
   const canSubmit =
-    !isWithdrawalLocked &&
     hasValidAmount &&
     hasEnoughBalance &&
     hasValidAddress &&
@@ -44,6 +46,13 @@ export default function WithdrawPanel() {
 
   async function handleSubmit() {
     if (!canSubmit) return
+
+    if (isWithdrawalLocked) {
+      setLockedAttempted(true)
+      haptic.notification('error')
+      return
+    }
+
     setStatus('submitting')
     setErrorMessage(null)
     haptic.impact('light')
@@ -97,23 +106,24 @@ export default function WithdrawPanel() {
 
   return (
     <div className="space-y-4">
-      <div
-        className={`glass-card p-3 text-center text-sm font-semibold ${
-          isWithdrawalLocked ? 'text-red-400' : 'text-emerald-400'
-        }`}
-      >
-        {isWithdrawalLocked
-          ? t('wallet.withdrawalLocked', { amount: MIN_DEPOSIT_USD })
-          : t('wallet.withdrawalUnlocked')}
-      </div>
-
-      {isWithdrawalLocked && (
-        <p className="px-1 text-center text-xs text-slate-400">
-          {t('wallet.withdrawalLockedMessage', { amount: MIN_DEPOSIT_USD })}
-        </p>
+      {!isWithdrawalLocked && (
+        <div className="glass-card p-3 text-center text-sm font-semibold text-emerald-400">
+          {t('wallet.withdrawalUnlocked')}
+        </div>
       )}
 
-      <div className={`glass-card p-4 ${isWithdrawalLocked ? 'pointer-events-none opacity-40' : ''}`}>
+      {lockedAttempted && (
+        <>
+          <div className="glass-card p-3 text-center text-sm font-semibold text-red-400">
+            {t('wallet.withdrawalLocked', { amount: MIN_DEPOSIT_USD })}
+          </div>
+          <p className="px-1 text-center text-xs text-slate-400">
+            {t('wallet.withdrawalLockedMessage', { amount: MIN_DEPOSIT_USD })}
+          </p>
+        </>
+      )}
+
+      <div className="glass-card p-4">
         <p className="mb-2 text-xs font-medium text-slate-400">{t('wallet.network')}</p>
         <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-800/60 p-1">
           {(['TON', 'TRC20'] as const).map((net) => (

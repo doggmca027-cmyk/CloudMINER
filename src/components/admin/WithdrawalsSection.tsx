@@ -35,13 +35,27 @@ export default function WithdrawalsSection() {
     setMessage(null)
     haptic.impact('light')
     try {
-      await resolveWithdrawal(transactionId, true)
+      // Підтвердження тепер само відправляє крипту (Edge Function
+      // process-withdrawal) — може зайняти кілька секунд, доки не
+      // прийде відповідь мережі TON/Tron.
+      const { txHash } = await resolveWithdrawal(transactionId, true)
       setWithdrawals((list) => list.filter((w) => w.transactionId !== transactionId))
-      setMessage({ type: 'success', text: t('admin.withdrawals.approveSuccess') })
+      setMessage({
+        type: 'success',
+        text: txHash
+          ? t('admin.withdrawals.approveSuccessWithHash', { hash: txHash })
+          : t('admin.withdrawals.approveSuccess'),
+      })
       haptic.notification('success')
     } catch {
-      setMessage({ type: 'error', text: t('admin.withdrawals.error') })
+      // Заявка НЕ зникає зі списку: якщо переказ не пройшов, сервер сам
+      // повернув її статус на 'failed' і повернув баланс — вона просто
+      // більше не 'pending', тож зникне зі списку після наступного reload.
+      // Показуємо іншу підказку, ніж загальна помилка — гроші користувача
+      // в безпеці.
+      setMessage({ type: 'error', text: t('admin.withdrawals.payoutFailed') })
       haptic.notification('error')
+      void reload()
     } finally {
       setBusyId(null)
     }
@@ -152,7 +166,9 @@ export default function WithdrawalsSection() {
                     disabled={busyId === w.transactionId}
                     className="rounded-lg bg-neon-gradient py-2 text-xs font-semibold text-slate-950 disabled:opacity-40"
                   >
-                    🟢 {t('admin.withdrawals.approve')}
+                    {busyId === w.transactionId
+                      ? t('admin.withdrawals.approving')
+                      : `🟢 ${t('admin.withdrawals.approve')}`}
                   </button>
                 </div>
               )}

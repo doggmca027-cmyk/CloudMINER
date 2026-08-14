@@ -207,11 +207,14 @@
       "title": "Çekim talepleri",
       "empty": "Bekleyen çekim talebi yok",
       "approve": "Onayla",
+      "approving": "Ödeme gönderiliyor...",
       "reject": "Reddet",
       "reasonPlaceholder": "Reddetme nedeni (isteğe bağlı)",
       "approveSuccess": "Talep onaylandı",
+      "approveSuccessWithHash": "Ödeme otomatik gönderildi. Hash: {{hash}}",
       "rejectSuccess": "Talep reddedildi, bakiye iade edildi",
       "error": "Talep işlenemedi",
+      "payoutFailed": "Otomatik ödeme başarısız oldu — tutar kullanıcının bakiyesine iade edildi, talep incelemeye alındı",
       "totalDeposits": "Toplam yatırım: {{amount}} USDT"
     },
     "tasks": {

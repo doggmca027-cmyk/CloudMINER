@@ -129,18 +129,46 @@ export async function fetchPendingWithdrawals(): Promise<PendingWithdrawal[]> {
   return ((data ?? []) as PendingWithdrawalRow[]).map(mapPendingWithdrawalRow)
 }
 
+export interface ResolveWithdrawalResult {
+  /** Хеш/референс транзакції в блокчейні — присутній лише при approve=true. */
+  txHash?: string
+}
+
+/**
+ * Відхилення (approve=false) — звичайний RPC, гроші нікуди не йдуть, лише
+ * повертаються на баланс.
+ *
+ * Підтвердження (approve=true) — НЕ прямий RPC: викликає Edge Function
+ * `process-withdrawal`, яка сама відправляє крипту з гарячого гаманця
+ * проєкту (приватні ключі живуть тільки в секретах Edge Function, ніколи в
+ * браузері) і лише потім позначає заявку завершеною. Пряме "approve=true"
+ * через admin_resolve_withdrawal сервер більше не приймає (див.
+ * supabase/migrations/20260816091000_auto_withdrawal_payout.sql).
+ */
 export async function resolveWithdrawal(
   transactionId: string,
   approve: boolean,
   rejectionReason?: string,
-): Promise<void> {
-  const { error } = await supabase.rpc('admin_resolve_withdrawal', {
-    p_admin_telegram_id: requireAdminTelegramId(),
-    p_transaction_id: transactionId,
-    p_approve: approve,
-    p_rejection_reason: rejectionReason ?? null,
+): Promise<ResolveWithdrawalResult> {
+  const adminTelegramId = requireAdminTelegramId()
+
+  if (!approve) {
+    const { error } = await supabase.rpc('admin_resolve_withdrawal', {
+      p_admin_telegram_id: adminTelegramId,
+      p_transaction_id: transactionId,
+      p_approve: false,
+      p_rejection_reason: rejectionReason ?? null,
+    })
+    if (error) throw new Error(error.message)
+    return {}
+  }
+
+  const { data, error } = await supabase.functions.invoke('process-withdrawal', {
+    body: { adminTelegramId, transactionId },
   })
   if (error) throw new Error(error.message)
+  if (!data?.success) throw new Error(data?.error ?? 'payout_failed')
+  return { txHash: data.txHash }
 }
 
 // ---------------------------------------------------------------------------

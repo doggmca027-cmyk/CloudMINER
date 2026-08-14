@@ -1,0 +1,13 @@
+-- CloudMiner HYIP — готуємо статус для автовиплат виводу.
+--
+-- Додаємо 'processing' до transaction_status: проміжний стан між
+-- 'pending' (заявка щойно створена) і 'completed'/'failed' — виставляється
+-- на час фактичної відправки крипти з гарячого гаманця (Edge Function
+-- process-withdrawal), щоб той самий запит не міг бути "підтверджений"
+-- двічі паралельно й щоб було видно в адмінці, які заявки вже в польоті.
+--
+-- ALTER TYPE ... ADD VALUE не можна використати в тій самій транзакції, де
+-- нове значення одразу застосовується (обмеження Postgres) — тому це
+-- окрема міграція, а RPC, що посилаються на 'processing', живуть у
+-- наступному файлі (20260816091000_auto_withdrawal_payout.sql).
+alter type transaction_status add value if not exists 'processing';

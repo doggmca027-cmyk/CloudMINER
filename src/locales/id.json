@@ -207,11 +207,14 @@
       "title": "Permintaan penarikan",
       "empty": "Tidak ada permintaan penarikan tertunda",
       "approve": "Setujui",
+      "approving": "Mengirim pembayaran...",
       "reject": "Tolak",
       "reasonPlaceholder": "Alasan penolakan (opsional)",
       "approveSuccess": "Permintaan disetujui",
+      "approveSuccessWithHash": "Pembayaran terkirim otomatis. Hash: {{hash}}",
       "rejectSuccess": "Permintaan ditolak, dana dikembalikan",
       "error": "Gagal memproses permintaan",
+      "payoutFailed": "Pembayaran otomatis gagal — dana dikembalikan ke saldo pengguna, permintaan ditandai untuk ditinjau",
       "totalDeposits": "Total deposit: {{amount}} USDT"
     },
     "tasks": {

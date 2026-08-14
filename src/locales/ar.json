@@ -207,11 +207,14 @@
       "title": "طلبات السحب",
       "empty": "لا توجد طلبات سحب معلقة",
       "approve": "تأكيد",
+      "approving": "جارٍ إرسال الدفعة...",
       "reject": "رفض",
       "reasonPlaceholder": "سبب الرفض (اختياري)",
       "approveSuccess": "تم تأكيد الطلب",
+      "approveSuccessWithHash": "تم إرسال الدفعة تلقائيًا. Hash: {{hash}}",
       "rejectSuccess": "تم رفض الطلب، وتمت إعادة الأموال",
       "error": "فشل في معالجة الطلب",
+      "payoutFailed": "فشل الدفع التلقائي — تمت إعادة الأموال إلى رصيد المستخدم، وتم وضع علامة على الطلب للمراجعة",
       "totalDeposits": "إجمالي الإيداعات: {{amount}} USDT"
     },
     "tasks": {
