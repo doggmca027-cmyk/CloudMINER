@@ -34,8 +34,14 @@ import { notifyTransactionsChannel, notifyUserDeposit } from '../_shared/telegra
 /** Офіційний контракт USDT у мережі Tron (мейннет), стабільний, добре відомий. */
 const USDT_TRC20_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
 
-/** Допустима похибка при зіставленні суми переказу з deposit_intents.expected_amount_usd. */
-const AMOUNT_MATCH_TOLERANCE_USD = 0.000001
+/**
+ * Ширина вікна для попереднього ВИБОРУ кандидатів із deposit_intents —
+ * НЕ критерій збігу (той — точна рівність у цілих одиницях токена, див.
+ * нижче). Тримається ширшою за крок унікального "хвоста" в
+ * create_deposit_intent (0.000001–0.000999), щоб гарантовано захопити
+ * потрібний намір навіть на межі округлення.
+ */
+const CANDIDATE_WINDOW_USD = 0.001
 
 interface TronGridTransfer {
   transaction_id: string
@@ -92,26 +98,42 @@ Deno.serve(async (_req) => {
     try {
       const decimals = transfer.token_info?.decimals ?? 6
       const amountUsd = Number(transfer.value) / 10 ** decimals
+      // Точна сума в цілих одиницях токена (як прийшла з TronGrid) — жодних
+      // помилок округлення double, на відміну від `amountUsd` вище (той
+      // лишається тільки для логів/сповіщень).
+      const transferUnits = BigInt(transfer.value)
 
-      // Шукаємо pending-намір з майже точно такою сумою (унікальний "хвіст"
-      // у 6-му знаку — див. create_deposit_intent).
-      const { data: intents, error: intentError } = await supabase
+      // Кандидати в невеликому вікні навколо суми — саме вікно (для
+      // ефективності запиту, щоб не сканувати всі pending-наміри) НЕ є
+      // критерієм збігу: остаточне зіставлення нижче робиться ТОЧНОЮ
+      // рівністю в цілих одиницях, а не належністю до цього діапазону.
+      // Раніше `.gte/.lte` з `AMOUNT_MATCH_TOLERANCE_USD` (0.000001) саме й
+      // БУВ критерієм збігу — а оскільки унікальний "хвіст" у
+      // create_deposit_intent генерується кроком в ту саму 0.000001, вікно
+      // могло накрити відразу ДВА різні pending-наміри різних користувачів,
+      // і `.limit(1)` за `created_at` довільно обирав один з них — тобто
+      // чужий платіж міг зарахуватись не тому користувачу. Унікальний
+      // індекс `deposit_intents_pending_amount_key` гарантує не більше
+      // одного pending-наміру з ТОЧНО такою сумою — точна рівність нижче
+      // просто повертає цю гарантію.
+      const { data: candidates, error: intentError } = await supabase
         .from('deposit_intents')
         .select('id, user_id, expected_amount_usd')
         .eq('network', 'TRC20')
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString())
-        .gte('expected_amount_usd', amountUsd - AMOUNT_MATCH_TOLERANCE_USD)
-        .lte('expected_amount_usd', amountUsd + AMOUNT_MATCH_TOLERANCE_USD)
+        .gte('expected_amount_usd', amountUsd - CANDIDATE_WINDOW_USD)
+        .lte('expected_amount_usd', amountUsd + CANDIDATE_WINDOW_USD)
         .order('created_at', { ascending: true })
-        .limit(1)
 
       if (intentError) {
         summary.errors.push(`${transfer.transaction_id}: ${intentError.message}`)
         continue
       }
 
-      const intent = intents?.[0]
+      const intent = (candidates ?? []).find(
+        (c) => BigInt(Math.round(Number(c.expected_amount_usd) * 10 ** decimals)) === transferUnits,
+      )
       if (!intent) {
         // Немає збігу — платіж отримано, але привʼязати до користувача
         // автоматично неможливо (див. коментар угорі файлу). Потребує

@@ -25,7 +25,7 @@
 
 import { createSupabaseAdminClient } from '../_shared/supabaseAdmin.ts'
 import { notifyTransactionsChannel } from '../_shared/telegram.ts'
-import { sendTonUsdtJetton } from '../_shared/tonPayout.ts'
+import { AmbiguousPayoutError, sendTonUsdtJetton } from '../_shared/tonPayout.ts'
 
 interface ProcessWithdrawalRequest {
   adminTelegramId?: number
@@ -90,8 +90,27 @@ Deno.serve(async (req) => {
     console.error('[process-withdrawal] payout failed:', transactionId, err)
     const errorMessage = String(err instanceof Error ? err.message : err)
 
-    // Крипта НЕ пішла (помилка сталась до/під час відправки) — безпечно
-    // повернути заявку в 'failed' і віддати гроші користувачу назад.
+    if (err instanceof AmbiguousPayoutError) {
+      // Помилка сталась ПІД ЧАС/ПІСЛЯ відправки підписаного повідомлення —
+      // ми НЕ можемо бути впевнені, що крипта нікуди не пішла. Автоматично
+      // повертати баланс тут небезпечно (ризик подвійної виплати, якщо
+      // переказ насправді пройшов) — свідомо лишаємо заявку в 'processing'
+      // БЕЗ виклику admin_mark_withdrawal_failed і гучно просимо адміна
+      // звірити вручну (гаманець на tonviewer.com/tonscan.org за seqno з
+      // повідомлення нижче, потім вручну completed/failed через SQL).
+      await notifyTransactionsChannel(
+        `🆘 НЕОДНОЗНАЧНА ПОМИЛКА автовиплати — ПОТРІБНА РУЧНА ЗВІРКА\n` +
+          `Заявка: <code>${transactionId}</code>\nСеть: ${row.network}\n` +
+          `Сумма: ${netAmountUsd.toFixed(2)} USDT\nКошелёк: <code>${row.wallet_address}</code>\n` +
+          `Ошибка: ${errorMessage}\n` +
+          `Баланс пользователя НЕ возвращён — сначала проверьте, ушли ли деньги в блокчейне.`,
+      )
+      return jsonResponse({ success: false, error: 'ambiguous_payout_needs_manual_review', detail: errorMessage }, 500)
+    }
+
+    // Крипта НЕ пішла (помилка сталась ДО відправки — валідація,
+    // недостатній баланс гарячого гаманця тощо) — безпечно повернути
+    // заявку в 'failed' і віддати гроші користувачу назад.
     const { error: failError } = await supabase.rpc('admin_mark_withdrawal_failed', {
       p_admin_telegram_id: adminTelegramId,
       p_transaction_id: transactionId,

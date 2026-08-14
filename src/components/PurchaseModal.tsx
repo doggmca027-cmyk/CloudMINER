@@ -30,16 +30,24 @@ export default function PurchaseModal({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [succeeded, setSucceeded] = useState(false)
+  // Захист від подвійного тапу: без цього прапорця швидкий подвійний тап на
+  // "Підтвердити" міг встигнути викликати onConfirmBalance() двічі до
+  // ре-рендера з succeeded=true, купуючи майнер вдвічі (якщо балансу
+  // вистачало на обидва рази).
+  const [submitting, setSubmitting] = useState(false)
 
   const capUsd = getCapUsd(template)
   const insufficient = balanceUsd < template.depositUsd
 
   function handleConfirmBalance() {
+    if (submitting) return
+    setSubmitting(true)
     const ok = onConfirmBalance()
     if (ok) {
       setSucceeded(true)
       haptic.notification('success')
     } else {
+      setSubmitting(false)
       haptic.notification('error')
     }
   }
@@ -97,7 +105,8 @@ export default function PurchaseModal({
           <button
             type="button"
             onClick={handleConfirmBalance}
-            className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950"
+            disabled={submitting}
+            className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {t('shop.modal.confirm')}
           </button>

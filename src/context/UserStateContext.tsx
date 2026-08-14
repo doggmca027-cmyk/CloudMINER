@@ -3,11 +3,12 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import type { MinerTemplate, User, UserMiner } from '../types'
-import { createMinerFromTemplate, createMockPurchasedMiners } from '../lib/mining'
+import { createMinerFromTemplate } from '../lib/mining'
 import { checkSubscription, type SubscriptionStatus } from '../lib/subscription'
 import { getTelegramUser, haptic } from '../lib/telegram'
 import { loadUserProfile } from '../lib/userProfile'
@@ -47,23 +48,44 @@ const UserStateContext = createContext<UserStateContextValue | null>(null)
 
 /**
  * TODO: список майнерів і виконані завдання поки живуть лише в пам'яті
- * клієнта (mock-дані) — у проді вони так само завантажуються з Supabase
+ * клієнта — у проді вони так само завантажуються з Supabase
  * (`user_miners`, `user_tasks`) і синхронізуються через API/Realtime.
  * Баланс (`balanceUsd`) вже гідрується реальним значенням з `users.balance_usd`
  * через RPC `get_or_create_user` (див. loadUser), але подальші локальні
- * зміни (claim/purchase/spend) поки не записуються назад у Supabase.
+ * зміни (claim/purchase/spend) поки не записуються назад у Supabase —
+ * тобто це ВСЕ ЩЕ демонстраційна поведінка UI, а не реальні операції з
+ * коштами. Реальний баланс (`users.balance_usd`) захищений незалежно на
+ * сервері (напр. `request_withdrawal` перевіряє його з `FOR UPDATE"),
+ * тож ці локальні дії не можуть призвести до реального виводу неіснуючих
+ * коштів — але вони показують користувачу оманливі цифри й "губляться"
+ * при кожному перезавантаженні застосунку. Це найбільший архітектурний
+ * розрив у застосунку — потребує окремого фронту роботи, не патчиться тут.
  */
 export function UserStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loadingUser, setLoadingUser] = useState(false)
-  const [balanceUsd, setBalanceUsd] = useState(0)
-  const [miners, setMiners] = useState<UserMiner[]>(() => createMockPurchasedMiners())
+  const [balanceUsd, setBalanceUsdState] = useState(0)
+  const [miners, setMiners] = useState<UserMiner[]>([])
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
     channel: false,
     chat: false,
   })
   const [checkingSubscription, setCheckingSubscription] = useState(false)
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
+
+  // Дзеркалять відповідний useState, але читаються/пишуться СИНХРОННО — на
+  // відміну від React-стану (яке під час подвійного тапу можна встигнути
+  // прочитати ДВІЧІ зі старим значенням до першого ре-рендера). Два швидкі
+  // послідовні виклики purchaseMiner/spendBalance — це два окремих,
+  // синхронних виклики функції в тому самому JS-тіку; звірка й списання
+  // через ref не залишають вікна між "перевірили" і "списали".
+  const balanceRef = useRef(0)
+  const completedTaskIdsRef = useRef<Set<string>>(new Set())
+
+  function setBalanceUsd(next: number) {
+    balanceRef.current = next
+    setBalanceUsdState(next)
+  }
 
   const loadUser = useCallback(async () => {
     setLoadingUser(true)
@@ -98,22 +120,24 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       loadUser,
       balanceUsd,
       miners,
-      addBalance: (amount) => setBalanceUsd((b) => b + amount),
+      addBalance: (amount) => {
+        setBalanceUsd(balanceRef.current + amount)
+      },
       claimMiner: (minerId, amount) => {
         setMiners((list) =>
           list.map((m) => (m.id === minerId ? { ...m, claimedUsd: m.claimedUsd + amount } : m)),
         )
-        setBalanceUsd((b) => b + amount)
+        setBalanceUsd(balanceRef.current + amount)
       },
       purchaseMiner: (template) => {
-        if (balanceUsd < template.depositUsd) return false
-        setBalanceUsd((b) => b - template.depositUsd)
+        if (balanceRef.current < template.depositUsd) return false
+        setBalanceUsd(balanceRef.current - template.depositUsd)
         setMiners((list) => [...list, createMinerFromTemplate(template)])
         return true
       },
       spendBalance: (amount) => {
-        if (balanceUsd < amount) return false
-        setBalanceUsd((b) => b - amount)
+        if (balanceRef.current < amount) return false
+        setBalanceUsd(balanceRef.current - amount)
         return true
       },
       subscription,
@@ -121,9 +145,10 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       refreshSubscription,
       completedTaskIds,
       claimTaskReward: (taskId, rewardUsd) => {
-        if (completedTaskIds.includes(taskId)) return false
+        if (completedTaskIdsRef.current.has(taskId)) return false
+        completedTaskIdsRef.current.add(taskId)
         setCompletedTaskIds((ids) => [...ids, taskId])
-        setBalanceUsd((b) => b + rewardUsd)
+        setBalanceUsd(balanceRef.current + rewardUsd)
         return true
       },
     }),

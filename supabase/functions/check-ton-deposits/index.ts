@@ -52,10 +52,19 @@ function extractComment(tx: TonApiTransaction): string {
   return tx.in_msg?.decoded_body?.text ?? tx.in_msg?.message ?? ''
 }
 
-/** Витягує перше довге число з коментаря — очікуваний формат: telegram_id користувача. */
+/**
+ * Витягує telegram_id з коментаря — коментар МАЄ складатись рівно з цифр
+ * (те саме, що DepositPanel копіює в буфер обміну, без жодного зайвого
+ * тексту). Раніше тут був `/\d{5,15}/` без прив'язки до меж рядка, який
+ * підхоплював ПЕРШЕ число будь-де в коментарі — якщо гаманець користувача
+ * дописував свій службовий текст (напр. "TX-202608141822 987654321"),
+ * депозит міг зарахуватись на чужий/неіснуючий акаунт. Якщо в коментарі є
+ * щось окрім цифр — краще не вгадувати й лишити платіж на ручну звірку
+ * (гілка `!telegramId` нижче), ніж ризикнути неправильною атрибуцією.
+ */
 function extractTelegramId(comment: string): number | null {
-  const match = comment.match(/\d{5,15}/)
-  return match ? Number(match[0]) : null
+  const trimmed = comment.trim()
+  return /^\d{5,15}$/.test(trimmed) ? Number(trimmed) : null
 }
 
 async function fetchIncomingTransactions(walletAddress: string): Promise<TonApiTransaction[]> {

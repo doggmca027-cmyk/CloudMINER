@@ -69,10 +69,16 @@ interface TonApiEventsResponse {
   events?: TonApiEvent[]
 }
 
-/** Витягує перше довге число з коментаря — очікуваний формат: telegram_id користувача. */
+/**
+ * Витягує telegram_id з коментаря — коментар МАЄ складатись рівно з цифр,
+ * без прив'язки до меж рядка `/\d{5,15}/` підхоплював би ПЕРШЕ число
+ * будь-де в тексті (напр. службовий префікс гаманця відправника) і міг би
+ * зарахувати платіж на чужий акаунт. Див. той самий фікс і докладніший
+ * коментар у check-ton-deposits/index.ts.
+ */
 function extractTelegramId(comment: string): number | null {
-  const match = comment.match(/\d{5,15}/)
-  return match ? Number(match[0]) : null
+  const trimmed = comment.trim()
+  return /^\d{5,15}$/.test(trimmed) ? Number(trimmed) : null
 }
 
 async function fetchIncomingJettonEvents(walletAddress: string): Promise<TonApiEvent[]> {

@@ -29,12 +29,39 @@ const JETTON_TRANSFER_OP = 0xf8a7ea5
 const USDT_DECIMALS = 6
 const DEFAULT_JETTON_MASTER = 'EQCxE6mUtQJKFnGfaROTDto1qKmGpaHTKMxAn4Sqa5uwl9pE'
 
-interface TonApiJettonWalletResponse {
-  wallet_address?: { address?: string }
+/**
+ * Помилка, кинута ПІСЛЯ (або під час) виклику `sendTransfer` — тобто
+ * підписане зовнішнє повідомлення МОГЛО вже піти в мережу (напр. таймаут
+ * читання відповіді toncenter вже після того, як вузол прийняв переказ).
+ * На відміну від помилок ДО цього моменту (немає мнемоніки, невалідна
+ * адреса, гаманець без USDT-jetton гаманця тощо — ті означають, що крипта
+ * ТОЧНО нікуди не пішла), кидати цю помилку як "переказ не пройшов" і
+ * автоматично повертати баланс користувачу небезпечно: якщо повідомлення
+ * насправді дійшло, вийде подвійна виплата (реальний переказ + повернений
+ * баланс, який можна вивести ще раз). process-withdrawal ловить саме цей
+ * тип і НЕ викликає автоповернення балансу — лишає заявку в 'processing'
+ * і гучно сигналить адміну для ручної звірки за хешем гаманця.
+ */
+export class AmbiguousPayoutError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options)
+    this.name = 'AmbiguousPayoutError'
+  }
 }
 
-/** Знаходить jetton-гаманець (не owner-адресу) нашого гарячого гаманця для конкретного jetton master. */
-async function fetchJettonWalletAddress(ownerAddress: string, jettonMaster: string): Promise<string> {
+interface TonApiJettonWalletResponse {
+  wallet_address?: { address?: string }
+  balance?: string
+}
+
+interface JettonWalletInfo {
+  address: string
+  /** Баланс у мінімальних одиницях jetton (напр. 6 знаків для USDT) — рядок, як повертає TonAPI. */
+  balanceUnits: bigint
+}
+
+/** Знаходить jetton-гаманець (не owner-адресу) нашого гарячого гаманця і його поточний баланс. */
+async function fetchJettonWallet(ownerAddress: string, jettonMaster: string): Promise<JettonWalletInfo> {
   const apiKey = Deno.env.get('TONAPI_KEY')
   const res = await fetch(`https://tonapi.io/v2/accounts/${ownerAddress}/jettons/${jettonMaster}`, {
     headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
@@ -47,7 +74,7 @@ async function fetchJettonWalletAddress(ownerAddress: string, jettonMaster: stri
   if (!address) {
     throw new Error('TonAPI: у гарячого гаманця немає jetton-гаманця для цього master (порожній баланс USDT?)')
   }
-  return address
+  return { address, balanceUnits: BigInt(data.balance ?? '0') }
 }
 
 /**
@@ -93,7 +120,18 @@ export async function sendTonUsdtJetton(destinationAddress: string, amountUsd: n
   })
   const contract = client.open(wallet)
 
-  const jettonWalletAddress = await fetchJettonWalletAddress(ownerAddress, jettonMaster)
+  const jettonWallet = await fetchJettonWallet(ownerAddress, jettonMaster)
+
+  // Перевіряємо баланс ДО відправки — sendTransfer сам по собі не звіряє
+  // достатність jetton-балансу (це перевіряє лише сам jetton-контракт УЖЕ
+  // ПІСЛЯ трансляції в мережу), тож без цієї перевірки заявку могло б бути
+  // помилково позначено 'completed' навіть якщо переказ on-chain відскочив
+  // назад через нестачу коштів на гарячому гаманці.
+  if (jettonWallet.balanceUnits < amountUnits) {
+    throw new Error(
+      `insufficient_hot_wallet_balance: on-chain ${jettonWallet.balanceUnits} < requested ${amountUnits} (одиниці USDT-jetton)`,
+    )
+  }
 
   // Тіло повідомлення jetton transfer за TEP-74:
   // https://github.com/ton-blockchain/TEPs/blob/master/text/0074-jettons-standard.md
@@ -110,18 +148,29 @@ export async function sendTonUsdtJetton(destinationAddress: string, amountUsd: n
 
   const seqno = await contract.getSeqno()
 
-  await contract.sendTransfer({
-    seqno,
-    secretKey: keyPair.secretKey,
-    messages: [
-      internal({
-        to: jettonWalletAddress,
-        value: toNano('0.06'), // газ на jetton-переказ; невикористаний залишок повернеться
-        bounce: true,
-        body,
-      }),
-    ],
-  })
+  // Все, що ДО цього рядка, могло впасти без жодного ризику (нічого ще не
+  // надіслано в мережу) — помилки звідти пропускаємо як звичайні Error.
+  // Сам виклик sendTransfer — точка неповернення: якщо він кине помилку,
+  // ми НЕ знаємо напевно, чи вузол встиг прийняти повідомлення до збою.
+  try {
+    await contract.sendTransfer({
+      seqno,
+      secretKey: keyPair.secretKey,
+      messages: [
+        internal({
+          to: jettonWallet.address,
+          value: toNano('0.06'), // газ на jetton-переказ; невикористаний залишок повернеться
+          bounce: true,
+          body,
+        }),
+      ],
+    })
+  } catch (err) {
+    throw new AmbiguousPayoutError(
+      `sendTransfer failed after signing — payout status unknown, do NOT auto-refund: ${String(err instanceof Error ? err.message : err)}`,
+      { cause: err },
+    )
+  }
 
   return `ton-out:${ownerAddress}:${seqno}`
 }
