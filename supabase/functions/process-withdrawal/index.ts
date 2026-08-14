@@ -9,23 +9,23 @@
 //
 // Потік:
 //   1) admin_mark_withdrawal_processing — блокує заявку, pending -> processing
-//   2) залежно від network відправляємо крипту (TON jetton / TRC-20 USDT)
+//   2) відправляємо USDT-jetton у мережі TON (вивід — лише TON, TRC-20
+//      прибрано з виводу; request_withdrawal на рівні БД теж більше не
+//      приймає інших мереж — див. 20260817090000_withdrawal_ton_only.sql)
 //   3) переказ пройшов    -> admin_mark_withdrawal_completed (tx_hash, повідомлення користувачу)
 //      переказ НЕ пройшов -> admin_mark_withdrawal_failed (повертає баланс, повідомлення користувачу)
 //                            + сповіщення в канал транзакцій, щоб адмін одразу побачив збій
 //
-// СЕКРЕТИ: див. коментарі в _shared/tonPayout.ts і _shared/tronPayout.ts,
-// плюс TELEGRAM_BOT_TOKEN / TELEGRAM_TRANSACTIONS_CHANNEL_ID (спільні з
-// іншими функціями).
+// СЕКРЕТИ: див. коментарі в _shared/tonPayout.ts, плюс TELEGRAM_BOT_TOKEN /
+// TELEGRAM_TRANSACTIONS_CHANNEL_ID (спільні з іншими функціями).
 //
-// ⚠️ Як і TON/Tron-інтеграції в check-*-deposits, реальна відправка крипти
-// (sendTonUsdtJetton / sendTronUsdt) НЕ перевірена проти живої мережі з
-// цього середовища — обов'язково протестувати маленькою сумою перед продом.
+// ⚠️ Як і TON-інтеграції в check-ton*-deposits, реальна відправка крипти
+// (sendTonUsdtJetton) НЕ перевірена проти живої мережі з цього середовища —
+// обов'язково протестувати маленькою сумою перед продом.
 
 import { createSupabaseAdminClient } from '../_shared/supabaseAdmin.ts'
 import { notifyTransactionsChannel } from '../_shared/telegram.ts'
 import { sendTonUsdtJetton } from '../_shared/tonPayout.ts'
-import { sendTronUsdt } from '../_shared/tronPayout.ts'
 
 interface ProcessWithdrawalRequest {
   adminTelegramId?: number
@@ -80,9 +80,10 @@ Deno.serve(async (req) => {
   try {
     if (row.network === 'TON') {
       txHash = await sendTonUsdtJetton(row.wallet_address, netAmountUsd)
-    } else if (row.network === 'TRC20') {
-      txHash = await sendTronUsdt(row.wallet_address, netAmountUsd)
     } else {
+      // Вивід дозволений лише в TON на рівні request_withdrawal — сюди
+      // потрапити з іншою мережею можна тільки якщо рядок був створений
+      // до 20260817090000_withdrawal_ton_only.sql (легасі TRC-20 заявка).
       throw new Error(`unsupported_network:${row.network}`)
     }
   } catch (err) {

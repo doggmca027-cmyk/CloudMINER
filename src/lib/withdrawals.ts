@@ -7,7 +7,8 @@ export const MIN_WITHDRAWAL_USD = 2
 /** Комісія за вивід, частка від суми (0.05 = 5%). Тримати синхронізовано з RPC. */
 export const WITHDRAWAL_FEE_RATE = 0.05
 
-export type WithdrawalNetwork = 'TON' | 'TRC20'
+/** Вивід дозволений лише в мережі TON (USDT-jetton) — TRC-20 прибрано з виводу. */
+export type WithdrawalNetwork = 'TON'
 
 export function getWithdrawalFeeUsd(amountUsd: number): number {
   return amountUsd * WITHDRAWAL_FEE_RATE
@@ -23,13 +24,8 @@ export function isValidTonAddress(address: string): boolean {
   return /^(-1|0):[a-fA-F0-9]{64}$/.test(trimmed) || /^[A-Za-z0-9_-]{48}$/.test(trimmed)
 }
 
-/** Дуже наближена перевірка формату TRC-20 (Tron) адреси. */
-export function isValidTrc20Address(address: string): boolean {
-  return /^T[A-Za-z0-9]{33}$/.test(address.trim())
-}
-
 export function isValidWithdrawalAddress(address: string, network: WithdrawalNetwork): boolean {
-  return network === 'TON' ? isValidTonAddress(address) : isValidTrc20Address(address)
+  return network === 'TON' && isValidTonAddress(address)
 }
 
 export interface WithdrawalRequestInput {
