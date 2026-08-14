@@ -8,10 +8,16 @@ import {
   type ReactNode,
 } from 'react'
 import type { MinerTemplate, User, UserMiner } from '../types'
-import { createMinerFromTemplate } from '../lib/mining'
+import { claimMinerIncomeRpc, listUserMiners, purchaseMinerRpc } from '../lib/minersApi'
+import { claimTaskRewardRpc } from '../lib/tasksCatalog'
 import { checkSubscription, type SubscriptionStatus } from '../lib/subscription'
 import { getTelegramUser, haptic } from '../lib/telegram'
 import { loadUserProfile } from '../lib/userProfile'
+
+export interface ActionResult {
+  success: boolean
+  error?: string
+}
 
 interface UserStateContextValue {
   /** Профіль користувача, завантажений з Supabase (null, доки не завантажено). */
@@ -21,16 +27,31 @@ interface UserStateContextValue {
   loadUser: () => Promise<void>
   /** Підтверджений баланс користувача, USDT. */
   balanceUsd: number
-  /** Куплені майнери (без урахування free-майнера — той живе локально в MiningTab). */
+  /** Куплені майнери (без урахування free-майнера — той живе локально в MiningTab), з реального `user_miners`. */
   miners: UserMiner[]
-  addBalance: (amount: number) => void
-  /** Переводить накопичений дохід конкретного майнера на баланс. */
-  claimMiner: (minerId: string, amount: number) => void
+  loadingMiners: boolean
+  /** Перезавантажує список майнерів із сервера. */
+  refreshMiners: () => Promise<void>
   /**
-   * Списує вартість шаблону з балансу й додає новий майнер у список.
-   * Повертає `false`, якщо коштів на балансі недостатньо.
+   * Локальний, НЕ персистентний приріст балансу — використовується ЛИШЕ для
+   * free-майнера (виданого за підписку на канал/чат): він не прив'язаний до
+   * депозиту/виводу і навмисно не пишеться в Supabase (див. коментар нижче).
+   * Для куплених майнерів і завдань баланс синхронізується з реальним
+   * `new_balance_usd`, який повертають відповідні RPC.
    */
-  purchaseMiner: (template: MinerTemplate) => boolean
+  addBalance: (amount: number) => void
+  /**
+   * Купує майнер за шаблоном каталогу — RPC `purchase_miner` реально
+   * списує вартість із `users.balance_usd` на сервері (під `FOR UPDATE`,
+   * без TOCTOU при подвійному тапу) і створює рядок у `user_miners`.
+   */
+  purchaseMiner: (template: MinerTemplate) => Promise<ActionResult>
+  /**
+   * Переводить накопичений дохід конкретного майнера на баланс — RPC
+   * `claim_miner_income` рахує суму на сервері (та сама формула, що й
+   * клієнтський прев'ю в MinerCard) і реально нараховує її.
+   */
+  claimMinerIncome: (minerId: string) => Promise<ActionResult & { claimedUsd?: number }>
   /** Списує довільну суму з балансу (напр. після заявки на вивід). Повертає `false`, якщо коштів недостатньо. */
   spendBalance: (amount: number) => boolean
   /** Статус підписки на офіційний канал/чат (гейт для free-майнера, TasksTab). */
@@ -38,49 +59,45 @@ interface UserStateContextValue {
   checkingSubscription: boolean
   /** Перевіряє підписку заново й оновлює `subscription`. Спільна для MiningTab і TasksTab. */
   refreshSubscription: () => Promise<void>
-  /** Id завдань (партнерських), за які вже нараховано винагороду. */
-  completedTaskIds: string[]
-  /** Зараховує винагороду за завдання один раз. Повертає `false`, якщо вже зараховано. */
-  claimTaskReward: (taskId: string, rewardUsd: number) => boolean
+  /**
+   * Зараховує винагороду за завдання — RPC `claim_task_reward` гарантує
+   * (унікальний ключ у `user_tasks`), що та сама нагорода не видасться
+   * двічі, навіть при паралельних викликах чи після перезавантаження.
+   */
+  claimTaskReward: (taskId: string) => Promise<ActionResult & { rewardUsd?: number }>
 }
 
 const UserStateContext = createContext<UserStateContextValue | null>(null)
 
 /**
- * TODO: список майнерів і виконані завдання поки живуть лише в пам'яті
- * клієнта — у проді вони так само завантажуються з Supabase
- * (`user_miners`, `user_tasks`) і синхронізуються через API/Realtime.
- * Баланс (`balanceUsd`) вже гідрується реальним значенням з `users.balance_usd`
- * через RPC `get_or_create_user` (див. loadUser), але подальші локальні
- * зміни (claim/purchase/spend) поки не записуються назад у Supabase —
- * тобто це ВСЕ ЩЕ демонстраційна поведінка UI, а не реальні операції з
- * коштами. Реальний баланс (`users.balance_usd`) захищений незалежно на
- * сервері (напр. `request_withdrawal` перевіряє його з `FOR UPDATE"),
- * тож ці локальні дії не можуть призвести до реального виводу неіснуючих
- * коштів — але вони показують користувачу оманливі цифри й "губляться"
- * при кожному перезавантаженні застосунку. Це найбільший архітектурний
- * розрив у застосунку — потребує окремого фронту роботи, не патчиться тут.
+ * ⚠️ Free-майнер (виданий за підписку на офіційний канал/чат, не за
+ * депозит) і далі живе ЛИШЕ в пам'яті MiningTab, не в цій таблиці —
+ * навмисне архітектурне рішення, а не недогляд: його "розблокування" зараз
+ * ніяк криптографічно не перевіряється (Edge Function `check-subscription`
+ * ще не розгорнута — checkSubscription/verifyTaskSubscription повертають
+ * безпечний фолбек), тож зберігати його дохід як реальні гроші на сервері
+ * було б передчасно. Куплені майнери, навпаки, тепер повністю реальні:
+ * список — з `list_user_miners`, покупка — `purchase_miner`, дохід —
+ * `claim_miner_income` (див. supabase/migrations/20260818093000_*).
  */
 export function UserStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loadingUser, setLoadingUser] = useState(false)
   const [balanceUsd, setBalanceUsdState] = useState(0)
   const [miners, setMiners] = useState<UserMiner[]>([])
+  const [loadingMiners, setLoadingMiners] = useState(false)
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
     channel: false,
     chat: false,
   })
   const [checkingSubscription, setCheckingSubscription] = useState(false)
-  const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
 
-  // Дзеркалять відповідний useState, але читаються/пишуться СИНХРОННО — на
-  // відміну від React-стану (яке під час подвійного тапу можна встигнути
-  // прочитати ДВІЧІ зі старим значенням до першого ре-рендера). Два швидкі
-  // послідовні виклики purchaseMiner/spendBalance — це два окремих,
-  // синхронних виклики функції в тому самому JS-тіку; звірка й списання
-  // через ref не залишають вікна між "перевірили" і "списали".
+  // Дзеркалить balanceUsd, але читається/пишеться СИНХРОННО — інакше
+  // подвійний тап встиг би прочитати старе значення зі стану React ДВІЧІ
+  // до першого ре-рендера (TOCTOU). Актуально для spendBalance/addBalance
+  // (free-майнер) — покупка/клейм куплених майнерів тепер атомарні на
+  // сервері (FOR UPDATE), тут лише синхронізують локальне відображення.
   const balanceRef = useRef(0)
-  const completedTaskIdsRef = useRef<Set<string>>(new Set())
 
   function setBalanceUsd(next: number) {
     balanceRef.current = next
@@ -97,6 +114,16 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       setLoadingUser(false)
+    }
+  }, [])
+
+  const refreshMiners = useCallback(async () => {
+    setLoadingMiners(true)
+    try {
+      const list = await listUserMiners()
+      setMiners(list)
+    } finally {
+      setLoadingMiners(false)
     }
   }, [])
 
@@ -120,20 +147,24 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       loadUser,
       balanceUsd,
       miners,
+      loadingMiners,
+      refreshMiners,
       addBalance: (amount) => {
         setBalanceUsd(balanceRef.current + amount)
       },
-      claimMiner: (minerId, amount) => {
-        setMiners((list) =>
-          list.map((m) => (m.id === minerId ? { ...m, claimedUsd: m.claimedUsd + amount } : m)),
-        )
-        setBalanceUsd(balanceRef.current + amount)
+      purchaseMiner: async (template) => {
+        const result = await purchaseMinerRpc(template.id)
+        if (!result.success) return { success: false, error: result.error }
+        if (result.newBalanceUsd !== undefined) setBalanceUsd(result.newBalanceUsd)
+        await refreshMiners()
+        return { success: true }
       },
-      purchaseMiner: (template) => {
-        if (balanceRef.current < template.depositUsd) return false
-        setBalanceUsd(balanceRef.current - template.depositUsd)
-        setMiners((list) => [...list, createMinerFromTemplate(template)])
-        return true
+      claimMinerIncome: async (minerId) => {
+        const result = await claimMinerIncomeRpc(minerId)
+        if (!result.success) return { success: false, error: result.error }
+        if (result.newBalanceUsd !== undefined) setBalanceUsd(result.newBalanceUsd)
+        await refreshMiners()
+        return { success: true, claimedUsd: result.claimedUsd }
       },
       spendBalance: (amount) => {
         if (balanceRef.current < amount) return false
@@ -143,13 +174,11 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       subscription,
       checkingSubscription,
       refreshSubscription,
-      completedTaskIds,
-      claimTaskReward: (taskId, rewardUsd) => {
-        if (completedTaskIdsRef.current.has(taskId)) return false
-        completedTaskIdsRef.current.add(taskId)
-        setCompletedTaskIds((ids) => [...ids, taskId])
-        setBalanceUsd(balanceRef.current + rewardUsd)
-        return true
+      claimTaskReward: async (taskId) => {
+        const result = await claimTaskRewardRpc(taskId)
+        if (!result.success) return { success: false, error: result.error }
+        if (result.newBalanceUsd !== undefined) setBalanceUsd(result.newBalanceUsd)
+        return { success: true, rewardUsd: result.rewardUsd }
       },
     }),
     [
@@ -158,10 +187,11 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       loadUser,
       balanceUsd,
       miners,
+      loadingMiners,
+      refreshMiners,
       subscription,
       checkingSubscription,
       refreshSubscription,
-      completedTaskIds,
     ],
   )
 

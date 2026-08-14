@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getTelegramUser } from './telegram'
+import { getInitDataOrNull, getTelegramUser } from './telegram'
 
 /** Мінімальна сума депозиту, USDT. Тримати синхронізовано з RPC credit_deposit / create_deposit_intent. */
 export const MIN_DEPOSIT_USD = 5
@@ -26,24 +26,24 @@ export interface DepositIntentResult {
 /**
  * Створює "намір депозиту" для мережі TRC-20 через RPC `create_deposit_intent`
  * (SECURITY DEFINER, безпечно викликати з anon-ключа — вона лише ставить
- * запис-очікування в чергу, не чіпає нічий баланс). TRC-20 USDT-перекази не
- * мають вільного memo (на відміну від TON), тож check-tron-deposits
- * зіставляє вхідний платіж із цим наміром за ТОЧНОЮ сумою — тому в
- * DepositPanel користувачу показується не кругла сума, а `exactAmountUsd`.
+ * запис-очікування в чергу, не чіпає нічий баланс; ідентичність все одно
+ * перевіряється підписом initData, а не довіреним параметром). TRC-20
+ * USDT-перекази не мають вільного memo (на відміну від TON), тож
+ * check-tron-deposits зіставляє вхідний платіж із цим наміром за ТОЧНОЮ
+ * сумою — тому в DepositPanel користувачу показується не кругла сума, а
+ * `exactAmountUsd`.
  */
 export async function createDepositIntent(
   baseAmountUsd: number,
   network: ExactAmountNetwork,
 ): Promise<DepositIntentResult> {
-  const telegramUser = getTelegramUser()
-  const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
-  if (!telegramId) {
+  const initData = getInitDataOrNull()
+  if (!initData) {
     return { success: false, error: 'no_telegram_user' }
   }
 
   const { data, error } = await supabase.rpc('create_deposit_intent', {
-    p_telegram_id: telegramId,
-    p_first_name: telegramUser?.first_name ?? 'Dev User',
+    p_init_data: initData,
     p_base_amount_usd: baseAmountUsd,
     p_network: network,
   })

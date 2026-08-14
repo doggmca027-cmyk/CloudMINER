@@ -49,8 +49,10 @@
       "insufficientFunds": "Yetersiz bakiye",
       "topUp": "Bakiye yükle",
       "confirm": "Satın almayı onayla",
+      "confirming": "Satın alınıyor...",
       "cancel": "İptal",
-      "success": "Madenci başarıyla satın alındı!"
+      "success": "Madenci başarıyla satın alındı!",
+      "purchaseFailed": "Madenci satın alınamadı. Lütfen tekrar deneyin."
     }
   },
   "tasks": {

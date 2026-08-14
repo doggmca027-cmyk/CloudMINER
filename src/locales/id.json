@@ -49,8 +49,10 @@
       "insufficientFunds": "Saldo tidak mencukupi",
       "topUp": "Isi ulang saldo",
       "confirm": "Konfirmasi pembelian",
+      "confirming": "Memproses pembelian...",
       "cancel": "Batal",
-      "success": "Miner berhasil dibeli!"
+      "success": "Miner berhasil dibeli!",
+      "purchaseFailed": "Gagal membeli miner. Silakan coba lagi."
     }
   },
   "tasks": {

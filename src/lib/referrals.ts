@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getStartParam, getTelegramUser, haptic, openTelegramLink } from './telegram'
+import { getInitDataOrNull, getStartParam, getTelegramUser, haptic, openTelegramLink } from './telegram'
 import type { ReferralListItem, ReferralLevelStats } from '../types'
 
 /**
@@ -49,8 +49,11 @@ interface ReferralStatsRow {
 }
 
 /** Статистика по 3 рівнях через RPC `get_referral_stats`. Завжди повертає рівно 3 записи (level 1/2/3). */
-export async function fetchReferralStats(telegramId: number): Promise<ReferralLevelStats[]> {
-  const { data, error } = await supabase.rpc('get_referral_stats', { p_telegram_id: telegramId })
+export async function fetchReferralStats(): Promise<ReferralLevelStats[]> {
+  const initData = getInitDataOrNull()
+  const { data, error } = initData
+    ? await supabase.rpc('get_referral_stats', { p_init_data: initData })
+    : { data: null, error: null }
   if (error || !data) {
     // eslint-disable-next-line no-console
     console.warn('[referrals] get_referral_stats не вдався:', error?.message)
@@ -76,8 +79,11 @@ interface ReferralListRow {
 }
 
 /** Список особисто запрошених (рівень 1) через RPC `get_referral_list`. */
-export async function fetchReferralList(telegramId: number): Promise<ReferralListItem[]> {
-  const { data, error } = await supabase.rpc('get_referral_list', { p_telegram_id: telegramId })
+export async function fetchReferralList(): Promise<ReferralListItem[]> {
+  const initData = getInitDataOrNull()
+  const { data, error } = initData
+    ? await supabase.rpc('get_referral_list', { p_init_data: initData })
+    : { data: null, error: null }
   if (error || !data) {
     // eslint-disable-next-line no-console
     console.warn('[referrals] get_referral_list не вдався:', error?.message)

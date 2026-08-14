@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getInitDataOrNull } from './telegram'
 import type { Task } from '../types'
 
 /**
@@ -79,10 +80,10 @@ function mapTaskRow(row: TaskRow): Task {
 
 /**
  * Завантажує активні партнерські завдання напряму з таблиці `tasks`
- * (RLS дозволяє публічний SELECT лише для `is_active = true`) — керує
- * каталогом адмін через `admin_create_task`/`admin_set_task_active`.
- * Falls back to {@link PARTNER_TASKS}, якщо запит не вдався або таблиця
- * порожня (напр. свіжий проєкт без жодного заведеного завдання).
+ * (RLS дозволяє публічний SELECT лише для `is_active = true`) — БЕЗ статусу
+ * виконання (усі 'available'). Використовується як фолбек у
+ * {@link fetchUserTasks}, коли немає підписаного initData (поза Telegram)
+ * або сам RPC не вдався.
  */
 export async function fetchActiveTasks(): Promise<Task[]> {
   const { data, error } = await supabase
@@ -99,4 +100,60 @@ export async function fetchActiveTasks(): Promise<Task[]> {
 
   const rows = (data ?? []) as TaskRow[]
   return rows.length > 0 ? rows.map(mapTaskRow) : PARTNER_TASKS
+}
+
+interface UserTaskRow extends TaskRow {
+  status: 'claimed' | 'available'
+}
+
+/**
+ * Те саме, що {@link fetchActiveTasks}, але з РЕАЛЬНИМ статусом виконання
+ * поточним користувачем (`status: 'claimed' | 'available'`) через RPC
+ * `list_user_tasks` — на відміну від старого клієнтського
+ * `completedTaskIds`, цей статус переживає перезавантаження застосунку,
+ * бо зберігається в таблиці `user_tasks`.
+ */
+export async function fetchUserTasks(): Promise<Task[]> {
+  const initData = getInitDataOrNull()
+  if (initData) {
+    const { data, error } = await supabase.rpc('list_user_tasks', { p_init_data: initData })
+    if (!error && data) {
+      const rows = data as UserTaskRow[]
+      if (rows.length > 0) {
+        return rows.map((row) => ({ ...mapTaskRow(row), status: row.status }))
+      }
+      return PARTNER_TASKS
+    }
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[tasksCatalog] list_user_tasks не вдався, використано фолбек:', error.message)
+    }
+  }
+  return fetchActiveTasks()
+}
+
+export interface ClaimTaskResult {
+  success: boolean
+  rewardUsd?: number
+  newBalanceUsd?: number
+  error?: string
+}
+
+/** Одноразова винагорода за завдання — реально нараховує на сервері (RPC `claim_task_reward`). */
+export async function claimTaskRewardRpc(taskId: string): Promise<ClaimTaskResult> {
+  const initData = getInitDataOrNull()
+  if (!initData) return { success: false, error: 'no_telegram_user' }
+
+  const { data, error } = await supabase.rpc('claim_task_reward', {
+    p_init_data: initData,
+    p_task_id: taskId,
+  })
+  if (error) return { success: false, error: error.message }
+
+  const row = Array.isArray(data) ? data[0] : data
+  return {
+    success: true,
+    rewardUsd: row ? Number(row.reward_usd) : 0,
+    newBalanceUsd: row ? Number(row.new_balance_usd) : undefined,
+  }
 }

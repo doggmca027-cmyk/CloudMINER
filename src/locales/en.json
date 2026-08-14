@@ -49,8 +49,10 @@
       "insufficientFunds": "Insufficient balance",
       "topUp": "Top up balance",
       "confirm": "Confirm purchase",
+      "confirming": "Purchasing...",
       "cancel": "Cancel",
-      "success": "Miner purchased successfully!"
+      "success": "Miner purchased successfully!",
+      "purchaseFailed": "Couldn't purchase the miner. Please try again."
     }
   },
   "tasks": {

@@ -29,7 +29,7 @@ export default function FriendsTab() {
     let cancelled = false
     setLoadingList(true)
 
-    Promise.all([fetchReferralStats(user.telegramId), fetchReferralList(user.telegramId)])
+    Promise.all([fetchReferralStats(), fetchReferralList()])
       .then(([statsResult, listResult]) => {
         if (cancelled) return
         setStats(statsResult)

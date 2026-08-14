@@ -3,26 +3,26 @@ import { useTranslation } from 'react-i18next'
 import { useUserState } from '../context/UserStateContext'
 import { REQUIRED_LINKS, verifyTaskSubscription } from '../lib/subscription'
 import { getTelegramUser, haptic, openTelegramLink } from '../lib/telegram'
-import { fetchActiveTasks, PARTNER_TASKS } from '../lib/tasksCatalog'
+import { fetchUserTasks, PARTNER_TASKS } from '../lib/tasksCatalog'
 import type { Task } from '../types'
 import SubscriptionRow from '../components/SubscriptionRow'
 import TaskCard from '../components/TaskCard'
 
 export default function TasksTab() {
   const { t } = useTranslation()
-  const { subscription, checkingSubscription, refreshSubscription, completedTaskIds, claimTaskReward } =
-    useUserState()
+  const { subscription, checkingSubscription, refreshSubscription, claimTaskReward } = useUserState()
 
   const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>(PARTNER_TASKS)
 
-  // Живий каталог завдань з таблиці `tasks` (адмін керує через
-  // AdminTab → admin_create_task/admin_set_task_active). Хардкод
-  // PARTNER_TASKS лишається як фолбек на час завантаження й на випадок
-  // помилки/порожньої таблиці — див. fetchActiveTasks.
+  // Живий каталог завдань + РЕАЛЬНИЙ статус виконання поточним користувачем
+  // (з таблиці user_tasks, через RPC list_user_tasks) — на відміну від
+  // колишнього клієнтського completedTaskIds, цей статус переживає
+  // перезавантаження застосунку. Хардкод PARTNER_TASKS лишається як фолбек
+  // на час завантаження й на випадок помилки/порожньої таблиці.
   useEffect(() => {
     let cancelled = false
-    void fetchActiveTasks().then((loaded) => {
+    void fetchUserTasks().then((loaded) => {
       if (!cancelled) setTasks(loaded)
     })
     return () => {
@@ -32,17 +32,28 @@ export default function TasksTab() {
 
   const subscribed = subscription.channel && subscription.chat
 
-  async function handleVerifyPartnerTask(taskId: string, actionUrl: string, rewardUsd: number) {
+  async function handleVerifyPartnerTask(taskId: string, actionUrl: string) {
     setVerifyingTaskId(taskId)
     haptic.impact('light')
     try {
       const telegramId = getTelegramUser()?.id ?? 0
       const isSubscribed = await verifyTaskSubscription(actionUrl, telegramId)
-      if (isSubscribed) {
-        claimTaskReward(taskId, rewardUsd)
+      if (!isSubscribed) {
+        haptic.notification('warning')
+        return
+      }
+
+      const result = await claimTaskReward(taskId)
+      if (result.success) {
+        setTasks((list) => list.map((t) => (t.id === taskId ? { ...t, status: 'claimed' } : t)))
         haptic.notification('success')
       } else {
-        haptic.notification('warning')
+        // 'already_claimed' — заявку вже видано раніше (напр. в іншій
+        // сесії) — просто підтягуємо реальний стан замість помилки.
+        if (result.error === 'already_claimed') {
+          setTasks((list) => list.map((t) => (t.id === taskId ? { ...t, status: 'claimed' } : t)))
+        }
+        haptic.notification('error')
       }
     } finally {
       setVerifyingTaskId(null)
@@ -92,12 +103,10 @@ export default function TasksTab() {
               <TaskCard
                 key={task.id}
                 task={task}
-                completed={completedTaskIds.includes(task.id)}
+                completed={task.status === 'claimed'}
                 verifying={verifyingTaskId === task.id}
                 onOpenLink={() => task.actionUrl && openTelegramLink(task.actionUrl)}
-                onVerify={() =>
-                  handleVerifyPartnerTask(task.id, task.actionUrl ?? task.id, task.rewardUsd)
-                }
+                onVerify={() => handleVerifyPartnerTask(task.id, task.actionUrl ?? task.id)}
               />
             ))}
           </div>

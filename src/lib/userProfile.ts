@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getTelegramUser } from './telegram'
+import { getInitDataOrNull } from './telegram'
 import { getReferrerTelegramIdFromStartParam } from './referrals'
 import type { User } from '../types'
 
@@ -52,18 +52,24 @@ function mapUserRow(row: UserRow): User {
 /**
  * Завантажує (або створює) профіль поточного користувача через RPC
  * `get_or_create_user` (SECURITY DEFINER, див.
- * supabase/migrations/*_get_or_create_user.sql) — так само, як і
+ * supabase/migrations/*_get_or_create_user.sql та
+ * 20260818091000_migrate_rpcs_to_init_data.sql) — так само, як і
  * `request_withdrawal`, це обходить потребу відкривати anon-ключу прямий
  * SELECT/INSERT на таблицю `users` (що дозволило б будь-кому читати чужі
  * баланси через RLS-політику "using (true)").
+ *
+ * Ідентичність береться НЕ з клієнтського параметра, а з підпису initData —
+ * RPC сам перевіряє його й дістає telegram_id/ім'я/username із верифікованих
+ * даних (`verify_telegram_init_data`), тож підмінити чужий акаунт підміною
+ * значення в DevTools більше не можна.
+ *
+ * Поза Telegram (напр. `npm run dev` у звичайному браузері) підписаного
+ * initData не існує — профіль просто не завантажується (повертає null),
+ * так само, як і раніше для "немає telegram-користувача".
  */
 export async function loadUserProfile(): Promise<User | null> {
-  const telegramUser = getTelegramUser()
-  // Поза Telegram (напр. `npm run dev` у звичайному браузері) немає
-  // initDataUnsafe.user — підставляємо ту саму dev-заглушку, що й для
-  // заявок на вивід, щоб профіль можна було завантажити локально.
-  const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
-  if (!telegramId) return null
+  const initData = getInitDataOrNull()
+  if (!initData) return null
 
   // Реферер береться зі start_param (?startapp=ref_123 / бот-команда
   // /start ref_123) — RPC сам ігнорує його, якщо користувач уже існував
@@ -71,9 +77,7 @@ export async function loadUserProfile(): Promise<User | null> {
   const referrerTelegramId = getReferrerTelegramIdFromStartParam()
 
   const { data, error } = await supabase.rpc('get_or_create_user', {
-    p_telegram_id: telegramId,
-    p_first_name: telegramUser?.first_name ?? 'Dev User',
-    p_language_code: telegramUser?.language_code ?? 'ru',
+    p_init_data: initData,
     p_referrer_telegram_id: referrerTelegramId,
   })
 
@@ -96,13 +100,11 @@ export async function loadUserProfile(): Promise<User | null> {
  * змінився, а ця функція лише синхронізує вибір із бекендом на майбутнє.
  */
 export async function updateUserLanguage(languageCode: string): Promise<boolean> {
-  const telegramUser = getTelegramUser()
-  const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
-  if (!telegramId) return false
+  const initData = getInitDataOrNull()
+  if (!initData) return false
 
   const { error } = await supabase.rpc('update_user_language', {
-    p_telegram_id: telegramId,
-    p_first_name: telegramUser?.first_name ?? 'Dev User',
+    p_init_data: initData,
     p_language_code: languageCode,
   })
 

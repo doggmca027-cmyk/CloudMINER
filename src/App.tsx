@@ -12,12 +12,14 @@ import AdminTab from './pages/AdminTab'
 import { useUserState } from './context/UserStateContext'
 
 function App() {
-  const { loadUser } = useUserState()
+  const { loadUser, refreshMiners } = useUserState()
 
-  // Завантажує (або створює) профіль користувача з Supabase одразу при старті.
+  // Завантажує (або створює) профіль користувача й список куплених
+  // майнерів із Supabase одразу при старті.
   useEffect(() => {
     void loadUser()
-  }, [loadUser])
+    void refreshMiners()
+  }, [loadUser, refreshMiners])
 
   return (
     <div className="min-h-screen bg-base px-3 pb-24 pt-3">

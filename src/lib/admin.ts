@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
-import { getCurrentTelegramId } from './referrals'
-import { getTelegramUser } from './telegram'
+import { getTelegramUser, requireInitData } from './telegram'
 import type {
   AdminCreditType,
   AdminTask,
@@ -13,16 +12,15 @@ import type {
 /**
  * Усі функції нижче — тонкі обгортки над admin_* RPC (SECURITY DEFINER).
  * Реальна перевірка прав живе на сервері (`is_admin_telegram_id` всередині
- * кожної функції) — telegram_id викликача передається як параметр, а не
- * читається з якогось "довіреного" клієнтського стану, тому підміна
- * `user.isAdmin` у DevTools нічого не дає: RPC однаково відхилить виклик
- * з `not_admin`, якщо в БД `users.is_admin = false`.
+ * кожної функції) — і сама ідентичність викликача теж: RPC приймає
+ * підписаний initData (не голий telegram_id) і сам перевіряє підпис через
+ * `verify_telegram_init_data`, тож підміна `user.isAdmin` чи будь-якого ID
+ * у DevTools нічого не дає — без справжнього бот-токена підписати чужий
+ * initData неможливо.
  */
 
-function requireAdminTelegramId(): number {
-  const id = getCurrentTelegramId()
-  if (!id) throw new Error('no_telegram_id')
-  return id
+function requireAdminInitData(): string {
+  return requireInitData()
 }
 
 // ---------------------------------------------------------------------------
@@ -53,7 +51,7 @@ function mapAmbassadorRow(row: AmbassadorRow): AmbassadorStats {
 
 export async function fetchAmbassadors(): Promise<AmbassadorStats[]> {
   const { data, error } = await supabase.rpc('admin_list_ambassadors', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
   })
   if (error) throw new Error(error.message)
   return ((data ?? []) as AmbassadorRow[]).map(mapAmbassadorRow)
@@ -61,7 +59,7 @@ export async function fetchAmbassadors(): Promise<AmbassadorStats[]> {
 
 export async function setAmbassador(targetTelegramId: number, isAmbassador: boolean): Promise<void> {
   const { error } = await supabase.rpc('admin_set_ambassador', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
     p_target_telegram_id: targetTelegramId,
     p_is_ambassador: isAmbassador,
   })
@@ -78,7 +76,7 @@ export async function issueManualDeposit(
   creditType: AdminCreditType,
 ): Promise<number> {
   const { data, error } = await supabase.rpc('admin_issue_deposit', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
     p_target_telegram_id: targetTelegramId,
     p_target_first_name: getTelegramUser()?.first_name ?? 'User',
     p_amount_usd: amountUsd,
@@ -123,7 +121,7 @@ function mapPendingWithdrawalRow(row: PendingWithdrawalRow): PendingWithdrawal {
 
 export async function fetchPendingWithdrawals(): Promise<PendingWithdrawal[]> {
   const { data, error } = await supabase.rpc('admin_list_pending_withdrawals', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
   })
   if (error) throw new Error(error.message)
   return ((data ?? []) as PendingWithdrawalRow[]).map(mapPendingWithdrawalRow)
@@ -143,18 +141,20 @@ export interface ResolveWithdrawalResult {
  * проєкту (приватні ключі живуть тільки в секретах Edge Function, ніколи в
  * браузері) і лише потім позначає заявку завершеною. Пряме "approve=true"
  * через admin_resolve_withdrawal сервер більше не приймає (див.
- * supabase/migrations/20260816091000_auto_withdrawal_payout.sql).
+ * supabase/migrations/20260816091000_auto_withdrawal_payout.sql). Сама
+ * Edge Function теж перевіряє підпис `adminInitData` (не довіряє голому
+ * ID з тіла запиту) — див. supabase/functions/process-withdrawal/index.ts.
  */
 export async function resolveWithdrawal(
   transactionId: string,
   approve: boolean,
   rejectionReason?: string,
 ): Promise<ResolveWithdrawalResult> {
-  const adminTelegramId = requireAdminTelegramId()
+  const adminInitData = requireAdminInitData()
 
   if (!approve) {
     const { error } = await supabase.rpc('admin_resolve_withdrawal', {
-      p_admin_telegram_id: adminTelegramId,
+      p_admin_init_data: adminInitData,
       p_transaction_id: transactionId,
       p_approve: false,
       p_rejection_reason: rejectionReason ?? null,
@@ -164,7 +164,7 @@ export async function resolveWithdrawal(
   }
 
   const { data, error } = await supabase.functions.invoke('process-withdrawal', {
-    body: { adminTelegramId, transactionId },
+    body: { adminInitData, transactionId },
   })
   if (error) throw new Error(error.message)
   if (!data?.success) throw new Error(data?.error ?? 'payout_failed')
@@ -199,7 +199,7 @@ function mapAdminTaskRow(row: AdminTaskRow): AdminTask {
 
 export async function fetchAdminTasks(): Promise<AdminTask[]> {
   const { data, error } = await supabase.rpc('admin_list_tasks', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
   })
   if (error) throw new Error(error.message)
   return ((data ?? []) as AdminTaskRow[]).map(mapAdminTaskRow)
@@ -212,7 +212,7 @@ export async function createAdminTask(
   verificationType: TaskVerificationType,
 ): Promise<void> {
   const { error } = await supabase.rpc('admin_create_task', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
     p_title: title,
     p_action_url: actionUrl,
     p_reward_usd: rewardUsd,
@@ -223,7 +223,7 @@ export async function createAdminTask(
 
 export async function setAdminTaskActive(taskId: string, isActive: boolean): Promise<void> {
   const { error } = await supabase.rpc('admin_set_task_active', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
     p_task_id: taskId,
     p_is_active: isActive,
   })
@@ -232,7 +232,7 @@ export async function setAdminTaskActive(taskId: string, isActive: boolean): Pro
 
 export async function deleteAdminTask(taskId: string): Promise<void> {
   const { error } = await supabase.rpc('admin_delete_task', {
-    p_admin_telegram_id: requireAdminTelegramId(),
+    p_admin_init_data: requireAdminInitData(),
     p_task_id: taskId,
   })
   if (error) throw new Error(error.message)

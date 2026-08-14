@@ -49,8 +49,10 @@
       "insufficientFunds": "Saldo insuficiente",
       "topUp": "Recargar saldo",
       "confirm": "Confirmar compra",
+      "confirming": "Comprando...",
       "cancel": "Cancelar",
-      "success": "¡Minero comprado con éxito!"
+      "success": "¡Minero comprado con éxito!",
+      "purchaseFailed": "No se pudo comprar el minero. Inténtalo de nuevo."
     }
   },
   "tasks": {

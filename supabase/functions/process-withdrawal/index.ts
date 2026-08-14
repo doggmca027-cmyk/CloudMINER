@@ -8,6 +8,11 @@
 // тож уся операція живе тут, у service_role-контексті Edge Function.
 //
 // Потік:
+//   0) verify_telegram_init_data(adminInitData) — перевіряє підпис і
+//      отримує РЕАЛЬНИЙ telegram_id адміна. Раніше ця функція просто
+//      вірила adminTelegramId із тіла HTTP-запиту (JSON, який будь-хто міг
+//      підмінити напряму викликавши цей ендпоінт з anon-ключем) — тепер без
+//      дійсного initData, підписаного бот-токеном, далі просто не піде.
 //   1) admin_mark_withdrawal_processing — блокує заявку, pending -> processing
 //   2) відправляємо USDT-jetton у мережі TON (вивід — лише TON, TRC-20
 //      прибрано з виводу; request_withdrawal на рівні БД теж більше не
@@ -28,7 +33,7 @@ import { notifyTransactionsChannel } from '../_shared/telegram.ts'
 import { AmbiguousPayoutError, sendTonUsdtJetton } from '../_shared/tonPayout.ts'
 
 interface ProcessWithdrawalRequest {
-  adminTelegramId?: number
+  adminInitData?: string
   transactionId?: string
 }
 
@@ -48,17 +53,41 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: false, error: 'invalid_json' }, 400)
   }
 
-  const { adminTelegramId, transactionId } = body
-  if (!adminTelegramId || !transactionId) {
+  const { adminInitData, transactionId } = body
+  if (!adminInitData || !transactionId) {
     return jsonResponse({ success: false, error: 'missing_parameters' }, 400)
   }
 
   const supabase = createSupabaseAdminClient()
 
+  // Крок 0: перевіряємо підпис initData адміна й дістаємо справжній
+  // telegram_id з нього — а не з тіла запиту. is_admin_telegram_id
+  // перевіряється всередині admin_mark_withdrawal_processing самою SQL RPC,
+  // тут потрібен лише ВЕРИФІКОВАНИЙ id для передачі туди далі.
+  const { data: verifyData, error: verifyError } = await supabase.rpc('verify_telegram_init_data', {
+    p_init_data: adminInitData,
+  })
+
+  if (verifyError) {
+    return jsonResponse({ success: false, error: 'invalid_init_data', detail: verifyError.message }, 401)
+  }
+
+  const verifiedAdmin = (Array.isArray(verifyData) ? verifyData[0] : verifyData) as
+    | { telegram_id: number }
+    | undefined
+  const adminTelegramId = verifiedAdmin?.telegram_id
+
+  if (!adminTelegramId) {
+    return jsonResponse({ success: false, error: 'invalid_init_data' }, 401)
+  }
+
   // Крок 1: блокуємо заявку й переводимо pending -> processing. Звідси й
   // до кінця функції жоден інший виклик (повторний клік "Подтвердить",
   // паралельний запит) не зможе зачепити цю ж заявку — RPC сама кине
-  // withdrawal_already_resolved, якщо статус вже не 'pending'.
+  // withdrawal_already_resolved, якщо статус вже не 'pending'. Той самий
+  // RPC незалежно перевіряє is_admin_telegram_id(adminTelegramId) —
+  // верифікація initData вище лише встановлює, ХТО телефонує, а не ЩО їм
+  // дозволено.
   const { data: markData, error: markError } = await supabase.rpc('admin_mark_withdrawal_processing', {
     p_admin_telegram_id: adminTelegramId,
     p_transaction_id: transactionId,

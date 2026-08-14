@@ -110,6 +110,27 @@ export function getInitData(): string {
   return getTelegramWebApp()?.initData ?? ''
 }
 
+/**
+ * `getInitData()`, але `null` замість порожнього рядка — зручно для
+ * "graceful" гілок (`if (!initData) return null`), яких у клієнтських
+ * lib-функціях багато. Кожен RPC, що ідентифікує "поточного користувача",
+ * тепер приймає САМЕ initData (не telegram_id) і перевіряє його підпис на
+ * сервері через `verify_telegram_init_data` — без реального Telegram-сеансу
+ * (напр. `npm run dev` у звичайному браузері) підписаного initData просто
+ * нема, і такі виклики закономірно нічого не поверне.
+ */
+export function getInitDataOrNull(): string | null {
+  const initData = getInitData()
+  return initData ? initData : null
+}
+
+/** Те саме, що {@link getInitDataOrNull}, але кидає — для місць, де відсутність initData є помилкою, а не штатним "не залогінений". */
+export function requireInitData(): string {
+  const initData = getInitDataOrNull()
+  if (!initData) throw new Error('no_init_data')
+  return initData
+}
+
 /** Дані поточного користувача Telegram (не валідовані, лише для UI). */
 export function getTelegramUser(): TelegramUser | null {
   return getTelegramWebApp()?.initDataUnsafe.user ?? null

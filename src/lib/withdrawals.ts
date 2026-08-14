@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getTelegramUser } from './telegram'
+import { getInitDataOrNull } from './telegram'
 
 /** Мінімальна сума виводу, USDT. Тримати синхронізовано з RPC `request_withdrawal`. */
 export const MIN_WITHDRAWAL_USD = 2
@@ -42,31 +42,25 @@ export interface WithdrawalRequestResult {
 
 /**
  * Створює заявку на вивід через RPC `request_withdrawal` (SECURITY DEFINER,
- * див. supabase/migrations/*_transactions_ledger.sql). RPC сам знаходить
- * або створює рядок у `users` за telegram_id, перевіряє deposit-lock
- * (кидає виняток `deposit_required`, якщо в користувача ще немає жодного
- * завершеного депозиту — див. {@link isDepositRequiredError}) і вставляє
- * рядок у `transactions` зі статусом `pending` — анонімний ключ не має
- * прямого доступу на запис до жодної з цих таблиць, тільки до цієї вузько
- * окресленої функції.
+ * див. supabase/migrations/*_transactions_ledger.sql та
+ * 20260818091000_migrate_rpcs_to_init_data.sql). RPC сам перевіряє підпис
+ * initData (звідти й бере реальний telegram_id — підмінити чужий акаунт
+ * підміною параметра з DevTools більше не можна), знаходить або створює
+ * рядок у `users`, перевіряє deposit-lock (кидає виняток `deposit_required`,
+ * якщо в користувача ще немає жодного завершеного депозиту — див.
+ * {@link isDepositRequiredError}) і вставляє рядок у `transactions` зі
+ * статусом `pending`.
  */
 export async function createWithdrawalRequest(
   input: WithdrawalRequestInput,
 ): Promise<WithdrawalRequestResult> {
-  const telegramUser = getTelegramUser()
-  // Поза Telegram (напр. `npm run dev` у звичайному браузері) немає
-  // initDataUnsafe.user — підставляємо dev-заглушку, щоб форму можна було
-  // протестувати локально без Telegram-клієнта.
-  const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
-  const firstName = telegramUser?.first_name ?? 'Dev User'
-
-  if (!telegramId) {
+  const initData = getInitDataOrNull()
+  if (!initData) {
     return { success: false, error: 'no_telegram_user' }
   }
 
   const { data, error } = await supabase.rpc('request_withdrawal', {
-    p_telegram_id: telegramId,
-    p_first_name: firstName,
+    p_init_data: initData,
     p_amount_usd: input.amountUsd,
     p_wallet_address: input.walletAddress.trim(),
     p_network: input.network,

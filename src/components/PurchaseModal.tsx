@@ -9,8 +9,8 @@ interface PurchaseModalProps {
   template: MinerTemplate
   balanceUsd: number
   onClose: () => void
-  /** Списує вартість паку з балансу й створює майнер; повертає успіх операції. */
-  onConfirmBalance: () => boolean
+  /** Списує вартість паку з балансу й створює майнер на сервері; повертає успіх операції. */
+  onConfirmBalance: () => Promise<{ success: boolean; error?: string }>
 }
 
 /**
@@ -30,24 +30,32 @@ export default function PurchaseModal({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [succeeded, setSucceeded] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   // Захист від подвійного тапу: без цього прапорця швидкий подвійний тап на
   // "Підтвердити" міг встигнути викликати onConfirmBalance() двічі до
   // ре-рендера з succeeded=true, купуючи майнер вдвічі (якщо балансу
-  // вистачало на обидва рази).
+  // вистачало на обидва рази). Сама покупка тепер ще й атомарна на сервері
+  // (RPC purchase_miner, FOR UPDATE), тож це суто UI-запобіжник.
   const [submitting, setSubmitting] = useState(false)
 
   const capUsd = getCapUsd(template)
   const insufficient = balanceUsd < template.depositUsd
 
-  function handleConfirmBalance() {
+  async function handleConfirmBalance() {
     if (submitting) return
     setSubmitting(true)
-    const ok = onConfirmBalance()
-    if (ok) {
+    setErrorMessage(null)
+    const result = await onConfirmBalance()
+    if (result.success) {
       setSucceeded(true)
       haptic.notification('success')
     } else {
       setSubmitting(false)
+      setErrorMessage(
+        result.error === 'insufficient_balance'
+          ? t('shop.modal.insufficientFunds')
+          : t('shop.modal.purchaseFailed'),
+      )
       haptic.notification('error')
     }
   }
@@ -102,14 +110,17 @@ export default function PurchaseModal({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={handleConfirmBalance}
-            disabled={submitting}
-            className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {t('shop.modal.confirm')}
-          </button>
+          <>
+            {errorMessage && <p className="mt-2 text-xs text-red-400">{errorMessage}</p>}
+            <button
+              type="button"
+              onClick={handleConfirmBalance}
+              disabled={submitting}
+              className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? t('shop.modal.confirming') : t('shop.modal.confirm')}
+            </button>
+          </>
         )}
       </div>
 

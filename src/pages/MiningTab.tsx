@@ -22,7 +22,7 @@ export default function MiningTab() {
     balanceUsd,
     miners: purchasedMiners,
     addBalance,
-    claimMiner,
+    claimMinerIncome,
     subscription,
     checkingSubscription,
     refreshSubscription,
@@ -31,6 +31,9 @@ export default function MiningTab() {
   // Тікає кожні 100мс — від нього перераховуються всі "живі" суми на екрані.
   const [now, setNow] = useState(() => Date.now())
   const [freeMiner, setFreeMiner] = useState<UserMiner>(() => createFreeMiner())
+  // Захист від подвійного тапу на "Собрать" — claimMinerIncome тепер
+  // мережевий виклик (RPC), а не миттєва локальна мутація.
+  const [claiming, setClaiming] = useState(false)
 
   const subscribed = subscription.channel && subscription.chat
 
@@ -53,21 +56,29 @@ export default function MiningTab() {
     .filter((miner) => miner.isActive && !isMinerCompleted(miner, now))
     .reduce((sum, miner) => sum + getRatePerSecond(miner), 0)
 
-  function handleClaimAll() {
-    if (totalUnclaimedUsd <= 0) return
+  async function handleClaimAll() {
+    if (totalUnclaimedUsd <= 0 || claiming) return
+    setClaiming(true)
+    haptic.impact('light')
 
-    const freeAmount = getUnclaimedUsd(freeMiner, now)
-    if (freeAmount > 0) {
-      setFreeMiner((miner) => ({ ...miner, claimedUsd: miner.claimedUsd + freeAmount }))
-      addBalance(freeAmount)
+    try {
+      // Free-майнер — локальний приріст (не персистентний, див. коментар у
+      // UserStateContext.tsx). Куплені майнери — реальний RPC-виклик на
+      // кожен майнер з непустим доходом; сервер сам рахує точну суму на
+      // момент запиту (не довіряє `amount` з клієнта).
+      const freeAmount = getUnclaimedUsd(freeMiner, now)
+      if (freeAmount > 0) {
+        setFreeMiner((miner) => ({ ...miner, claimedUsd: miner.claimedUsd + freeAmount }))
+        addBalance(freeAmount)
+      }
+
+      const claimable = purchasedMiners.filter((miner) => getUnclaimedUsd(miner, now) > 0)
+      await Promise.all(claimable.map((miner) => claimMinerIncome(miner.id)))
+
+      haptic.notification('success')
+    } finally {
+      setClaiming(false)
     }
-
-    for (const miner of purchasedMiners) {
-      const amount = getUnclaimedUsd(miner, now)
-      if (amount > 0) claimMiner(miner.id, amount)
-    }
-
-    haptic.notification('success')
   }
 
   return (
@@ -115,7 +126,7 @@ export default function MiningTab() {
           <button
             type="button"
             onClick={handleClaimAll}
-            disabled={totalUnclaimedUsd <= 0}
+            disabled={totalUnclaimedUsd <= 0 || claiming}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-neon-gradient py-3.5 text-sm font-bold uppercase tracking-wide text-slate-950 shadow-neon transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span aria-hidden>👆</span>
