@@ -4,10 +4,11 @@ import Header from './components/Header'
 import Navigation from './components/Navigation'
 import MiningTab from './pages/MiningTab'
 import ShopTab from './pages/ShopTab'
+import FriendsTab from './pages/FriendsTab'
 import TasksTab from './pages/TasksTab'
-import TeamPage from './pages/TeamPage'
 import WalletTab from './pages/WalletTab'
 import ProfilePage from './pages/ProfilePage'
+import AdminTab from './pages/AdminTab'
 import { useUserState } from './context/UserStateContext'
 
 function App() {
@@ -27,12 +28,17 @@ function App() {
         <Routes>
           <Route path="/" element={<MiningTab />} />
           <Route path="/shop" element={<ShopTab />} />
+          <Route path="/friends" element={<FriendsTab />} />
           <Route path="/tasks" element={<TasksTab />} />
           <Route path="/wallet" element={<WalletTab />} />
-          {/* Team/Profile поки без пункту в нижньому меню (не входять до
-              чотирьох основних вкладок), але маршрути лишаються доступними. */}
-          <Route path="/team" element={<TeamPage />} />
+          {/* Profile поки без пункту в нижньому меню (не входить до п'яти
+              основних вкладок), але маршрут лишається доступним. */}
           <Route path="/profile" element={<ProfilePage />} />
+          {/* /admin: без пункту в нижньому меню, лише через Shield-кнопку в
+              Header, видиму тільки user?.isAdmin. AdminTab сам показує
+              "немає доступу" для не-адмінів — реальний захист усе одно на
+              сервері (кожен admin_* RPC перевіряє is_admin незалежно). */}
+          <Route path="/admin" element={<AdminTab />} />
         </Routes>
       </main>
       <Navigation />

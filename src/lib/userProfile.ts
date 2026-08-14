@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getTelegramUser } from './telegram'
+import { getReferrerTelegramIdFromStartParam } from './referrals'
 import type { User } from '../types'
 
 interface UserRow {
@@ -16,7 +17,10 @@ interface UserRow {
   is_vip: boolean
   referral_code: string
   referred_by: string | null
+  total_ref_earned: number | string
   has_completed_deposit: boolean
+  is_admin: boolean
+  is_ambassador: boolean
   created_at: string
   updated_at: string
 }
@@ -36,7 +40,10 @@ function mapUserRow(row: UserRow): User {
     isVip: row.is_vip,
     referralCode: row.referral_code,
     referredBy: row.referred_by,
+    totalRefEarned: Number(row.total_ref_earned),
     hasCompletedDeposit: row.has_completed_deposit,
+    isAdmin: row.is_admin,
+    isAmbassador: row.is_ambassador,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -58,10 +65,16 @@ export async function loadUserProfile(): Promise<User | null> {
   const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
   if (!telegramId) return null
 
+  // Реферер береться зі start_param (?startapp=ref_123 / бот-команда
+  // /start ref_123) — RPC сам ігнорує його, якщо користувач уже існував
+  // раніше (referred_by фіксується лише при першому створенні рядка).
+  const referrerTelegramId = getReferrerTelegramIdFromStartParam()
+
   const { data, error } = await supabase.rpc('get_or_create_user', {
     p_telegram_id: telegramId,
     p_first_name: telegramUser?.first_name ?? 'Dev User',
     p_language_code: telegramUser?.language_code ?? 'ru',
+    p_referrer_telegram_id: referrerTelegramId,
   })
 
   if (error) {

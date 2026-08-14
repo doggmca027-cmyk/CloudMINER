@@ -1,0 +1,211 @@
+import { supabase } from './supabase'
+import { getCurrentTelegramId } from './referrals'
+import { getTelegramUser } from './telegram'
+import type {
+  AdminCreditType,
+  AdminTask,
+  AmbassadorStats,
+  PendingWithdrawal,
+  TaskVerificationType,
+  TransactionNetwork,
+} from '../types'
+
+/**
+ * Усі функції нижче — тонкі обгортки над admin_* RPC (SECURITY DEFINER).
+ * Реальна перевірка прав живе на сервері (`is_admin_telegram_id` всередині
+ * кожної функції) — telegram_id викликача передається як параметр, а не
+ * читається з якогось "довіреного" клієнтського стану, тому підміна
+ * `user.isAdmin` у DevTools нічого не дає: RPC однаково відхилить виклик
+ * з `not_admin`, якщо в БД `users.is_admin = false`.
+ */
+
+function requireAdminTelegramId(): number {
+  const id = getCurrentTelegramId()
+  if (!id) throw new Error('no_telegram_id')
+  return id
+}
+
+// ---------------------------------------------------------------------------
+// Амбассадори
+// ---------------------------------------------------------------------------
+
+interface AmbassadorRow {
+  telegram_id: number
+  username: string | null
+  first_name: string
+  level1_count: number | string
+  level2_count: number | string
+  level3_count: number | string
+  total_deposited_usd: number | string
+}
+
+function mapAmbassadorRow(row: AmbassadorRow): AmbassadorStats {
+  return {
+    telegramId: Number(row.telegram_id),
+    username: row.username ?? undefined,
+    firstName: row.first_name,
+    level1Count: Number(row.level1_count),
+    level2Count: Number(row.level2_count),
+    level3Count: Number(row.level3_count),
+    totalDepositedUsd: Number(row.total_deposited_usd),
+  }
+}
+
+export async function fetchAmbassadors(): Promise<AmbassadorStats[]> {
+  const { data, error } = await supabase.rpc('admin_list_ambassadors', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+  })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as AmbassadorRow[]).map(mapAmbassadorRow)
+}
+
+export async function setAmbassador(targetTelegramId: number, isAmbassador: boolean): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_ambassador', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+    p_target_telegram_id: targetTelegramId,
+    p_is_ambassador: isAmbassador,
+  })
+  if (error) throw new Error(error.message)
+}
+
+// ---------------------------------------------------------------------------
+// Ручна видача депозитів
+// ---------------------------------------------------------------------------
+
+export async function issueManualDeposit(
+  targetTelegramId: number,
+  amountUsd: number,
+  creditType: AdminCreditType,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('admin_issue_deposit', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+    p_target_telegram_id: targetTelegramId,
+    p_target_first_name: getTelegramUser()?.first_name ?? 'User',
+    p_amount_usd: amountUsd,
+    p_credit_type: creditType,
+  })
+  if (error) throw new Error(error.message)
+  const row = Array.isArray(data) ? data[0] : data
+  return Number(row?.new_balance_usd ?? 0)
+}
+
+// ---------------------------------------------------------------------------
+// Модерація виводів
+// ---------------------------------------------------------------------------
+
+interface PendingWithdrawalRow {
+  transaction_id: string
+  telegram_id: number
+  username: string | null
+  first_name: string
+  amount_usd: number | string
+  fee_usd: number | string
+  network: TransactionNetwork
+  wallet_address: string
+  requested_at: string
+  user_total_deposited_usd: number | string
+}
+
+function mapPendingWithdrawalRow(row: PendingWithdrawalRow): PendingWithdrawal {
+  return {
+    transactionId: row.transaction_id,
+    telegramId: Number(row.telegram_id),
+    username: row.username ?? undefined,
+    firstName: row.first_name,
+    amountUsd: Number(row.amount_usd),
+    feeUsd: Number(row.fee_usd),
+    network: row.network,
+    walletAddress: row.wallet_address,
+    requestedAt: row.requested_at,
+    userTotalDepositedUsd: Number(row.user_total_deposited_usd),
+  }
+}
+
+export async function fetchPendingWithdrawals(): Promise<PendingWithdrawal[]> {
+  const { data, error } = await supabase.rpc('admin_list_pending_withdrawals', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+  })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as PendingWithdrawalRow[]).map(mapPendingWithdrawalRow)
+}
+
+export async function resolveWithdrawal(
+  transactionId: string,
+  approve: boolean,
+  rejectionReason?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('admin_resolve_withdrawal', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+    p_transaction_id: transactionId,
+    p_approve: approve,
+    p_rejection_reason: rejectionReason ?? null,
+  })
+  if (error) throw new Error(error.message)
+}
+
+// ---------------------------------------------------------------------------
+// Управління завданнями
+// ---------------------------------------------------------------------------
+
+interface AdminTaskRow {
+  id: string
+  title: string
+  action_url: string | null
+  reward_usd: number | string
+  verification_type: TaskVerificationType
+  is_active: boolean
+  sort_order: number
+}
+
+function mapAdminTaskRow(row: AdminTaskRow): AdminTask {
+  return {
+    id: row.id,
+    title: row.title,
+    actionUrl: row.action_url ?? undefined,
+    rewardUsd: Number(row.reward_usd),
+    verificationType: row.verification_type,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+  }
+}
+
+export async function fetchAdminTasks(): Promise<AdminTask[]> {
+  const { data, error } = await supabase.rpc('admin_list_tasks', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+  })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as AdminTaskRow[]).map(mapAdminTaskRow)
+}
+
+export async function createAdminTask(
+  title: string,
+  actionUrl: string,
+  rewardUsd: number,
+  verificationType: TaskVerificationType,
+): Promise<void> {
+  const { error } = await supabase.rpc('admin_create_task', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+    p_title: title,
+    p_action_url: actionUrl,
+    p_reward_usd: rewardUsd,
+    p_verification_type: verificationType,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function setAdminTaskActive(taskId: string, isActive: boolean): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_task_active', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+    p_task_id: taskId,
+    p_is_active: isActive,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteAdminTask(taskId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_delete_task', {
+    p_admin_telegram_id: requireAdminTelegramId(),
+    p_task_id: taskId,
+  })
+  if (error) throw new Error(error.message)
+}

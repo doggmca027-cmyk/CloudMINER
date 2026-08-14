@@ -12,6 +12,10 @@
     "copied": "Copied!",
     "comingSoon": "Coming soon"
   },
+  "header": {
+    "support": "Support",
+    "admin": "Admin panel"
+  },
   "currency": {
     "usd": "USD",
     "usdt": "USDT",
@@ -22,8 +26,8 @@
   "tabs": {
     "shop": "Shop",
     "mining": "Mining",
+    "friends": "Friends",
     "tasks": "Tasks",
-    "team": "Team",
     "wallet": "Wallet",
     "profile": "Profile"
   },
@@ -41,12 +45,9 @@
       "amount": "Amount",
       "return": "Total return",
       "duration": "Duration",
-      "paymentMethod": "Payment method",
-      "payBalance": "From balance",
-      "payTon": "TON Connect",
       "yourBalance": "Your balance",
       "insufficientFunds": "Insufficient balance",
-      "tonComingSoon": "Payment via TON Connect is coming soon",
+      "topUp": "Top up balance",
       "confirm": "Confirm purchase",
       "cancel": "Cancel",
       "success": "Miner purchased successfully!"
@@ -68,14 +69,20 @@
     "mandatoryWarning": "Without the channel and chat subscription, earnings are frozen",
     "subscribe": "Subscribe"
   },
-  "team": {
-    "title": "Team",
-    "yourReferralLink": "Your referral link",
-    "invitedFriends": "Friends invited",
-    "teamIncome": "Team income",
-    "inviteFriend": "Invite a friend",
-    "level": "Level",
-    "noReferrals": "You haven't invited anyone yet"
+  "friends": {
+    "yourLink": "Your referral link",
+    "linkNotConfigured": "Link not configured yet — contact the project admin",
+    "shareInTelegram": "Share on Telegram",
+    "shareText": "Join CloudMiner and start mining right inside Telegram!",
+    "totalEarned": "Earned from referrals",
+    "levelTitle": "Level {{level}} ({{percent}}%)",
+    "invitedCount": "Invited: {{count}}",
+    "depositsSum": "Deposits total: {{amount}} USDT",
+    "feedTitle": "Personally invited",
+    "noReferrals": "You haven't invited anyone yet",
+    "joined": "Joined",
+    "depositLabel": "Deposit: {{amount}} USDT",
+    "earnedFromLabel": "Your earnings: {{amount}} USDT"
   },
   "wallet": {
     "title": "Wallet",
@@ -119,8 +126,8 @@
     "depositMemoTitle": "TON network transfer",
     "depositMemoNotice": "Make sure to include this comment (memo) with the transfer — otherwise the payment won't be credited automatically:",
     "yourTelegramId": "Your Telegram ID",
-    "depositTrc20Title": "TRC-20 network transfer",
-    "depositTrc20Notice": "USDT on TRC-20 has no comment field, so the amount needs to be generated — send EXACTLY that amount, otherwise the payment won't be credited automatically.",
+    "depositExactAmountTitle": "{{network}} network transfer",
+    "depositExactAmountNotice": "USDT on {{network}} has no comment field, so the amount needs to be generated — send EXACTLY that amount, otherwise the payment won't be credited automatically.",
     "generateExactAmount": "Generate exact amount",
     "generatingAmount": "Generating...",
     "exactAmountToSend": "Send exactly this amount",
@@ -162,5 +169,79 @@
       "statusFrozen": "Frozen"
     },
     "activeMiners": "Active miners"
+  },
+  "admin": {
+    "title": "Admin panel",
+    "noAccess": "Access denied",
+    "tabs": {
+      "ambassadors": "Ambassadors",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "tasks": "Tasks"
+    },
+    "ambassadors": {
+      "assignTitle": "Assign an ambassador",
+      "telegramIdLabel": "Telegram ID",
+      "assign": "Assign",
+      "remove": "Remove",
+      "listTitle": "Ambassador list",
+      "empty": "No ambassadors yet",
+      "level1": "Lvl 1",
+      "level2": "Lvl 2",
+      "level3": "Lvl 3",
+      "totalDeposits": "Network deposits",
+      "success": "Done"
+    },
+    "deposit": {
+      "title": "Manual deposit issuance",
+      "telegramIdLabel": "User's Telegram ID",
+      "amountLabel": "Amount (USDT)",
+      "typeLabel": "Credit type",
+      "typeBalanceOnly": "Balance only (doesn't unlock withdrawal)",
+      "typeRealDeposit": "As a real deposit (unlocks withdrawal)",
+      "submit": "Issue deposit",
+      "submitting": "Issuing...",
+      "success": "Done! New balance: {{balance}} USDT"
+    },
+    "withdrawals": {
+      "title": "Withdrawal requests",
+      "empty": "No pending withdrawal requests",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reasonPlaceholder": "Rejection reason (optional)",
+      "approveSuccess": "Request approved",
+      "rejectSuccess": "Request rejected, funds refunded",
+      "error": "Failed to process the request",
+      "totalDeposits": "Total deposits: {{amount}} USDT"
+    },
+    "tasks": {
+      "createTitle": "New task",
+      "titleLabel": "Title",
+      "linkLabel": "Link",
+      "rewardLabel": "Reward (USDT)",
+      "verificationLabel": "Verification type",
+      "verificationSubscription": "Subscription check",
+      "verificationClick": "Just a click",
+      "create": "Create",
+      "creating": "Creating...",
+      "listTitle": "All tasks",
+      "empty": "No tasks yet",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "delete": "Delete"
+    },
+    "errors": {
+      "not_admin": "Insufficient admin rights",
+      "user_not_found": "No user with this Telegram ID found — they must open the app at least once first",
+      "invalid_amount": "Invalid amount",
+      "invalid_credit_type": "Invalid credit type",
+      "withdrawal_not_found": "Withdrawal request not found",
+      "withdrawal_already_resolved": "This request was already resolved by another action",
+      "title_required": "Please enter a task title",
+      "invalid_reward": "Invalid reward",
+      "invalid_verification_type": "Invalid verification type",
+      "task_not_found": "Task not found",
+      "generic": "Failed to complete the action"
+    }
   }
 }

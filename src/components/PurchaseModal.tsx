@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import type { MinerTemplate } from '../types'
 import { getCapUsd } from '../lib/mining'
-import { payWithTonConnect } from '../lib/tonConnect'
 import { haptic } from '../lib/telegram'
 
 interface PurchaseModalProps {
@@ -13,12 +13,13 @@ interface PurchaseModalProps {
   onConfirmBalance: () => boolean
 }
 
-type PaymentMethod = 'balance' | 'ton'
-
 /**
- * Модальне вікно підтвердження купівлі паку: оплата з балансу акаунту
- * (з перевіркою достатності коштів) або через TON Connect (заглушка,
- * див. src/lib/tonConnect.ts).
+ * Модальне вікно підтвердження купівлі паку. Оплата — ЛИШЕ з балансу
+ * акаунту: покупка майнерів напряму через TON Connect свідомо не
+ * підтримується (це вимагало б окремого бекенду для підтвердження
+ * блокчейн-транзакцій, якого немає, — див. видалений src/lib/tonConnect.ts).
+ * Єдиний шлях поповнити баланс — вкладка "Кошелёк" (WalletTab), тому при
+ * нестачі коштів тут одразу пропонується перейти туди, а не платити напряму.
  */
 export default function PurchaseModal({
   template,
@@ -27,9 +28,8 @@ export default function PurchaseModal({
   onConfirmBalance,
 }: PurchaseModalProps) {
   const { t } = useTranslation()
-  const [method, setMethod] = useState<PaymentMethod>('balance')
+  const navigate = useNavigate()
   const [succeeded, setSucceeded] = useState(false)
-  const [tonMessage, setTonMessage] = useState<string | null>(null)
 
   const capUsd = getCapUsd(template)
   const insufficient = balanceUsd < template.depositUsd
@@ -44,15 +44,10 @@ export default function PurchaseModal({
     }
   }
 
-  async function handleConfirmTon() {
+  function handleGoToWallet() {
     haptic.impact('light')
-    const result = await payWithTonConnect({
-      amountUsd: template.depositUsd,
-      comment: `CloudMiner: ${template.name}`,
-    })
-    if (!result.success) {
-      setTonMessage(t('shop.modal.tonComingSoon'))
-    }
+    onClose()
+    navigate('/wallet')
   }
 
   if (succeeded) {
@@ -81,64 +76,33 @@ export default function PurchaseModal({
         <Row label={t('shop.modal.duration')} value={`${template.durationDays} ${t('shop.days')}`} />
       </div>
 
-      <p className="mt-4 text-xs font-medium text-slate-400">{t('shop.modal.paymentMethod')}</p>
-      <div className="mt-1.5 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setMethod('balance')}
-          className={`rounded-xl border py-2 text-xs font-semibold transition-colors ${
-            method === 'balance'
-              ? 'border-cyan-500/50 bg-cyan-500/10 text-neon-glow'
-              : 'border-slate-700 text-slate-400'
-          }`}
-        >
-          {t('shop.modal.payBalance')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMethod('ton')}
-          className={`rounded-xl border py-2 text-xs font-semibold transition-colors ${
-            method === 'ton'
-              ? 'border-cyan-500/50 bg-cyan-500/10 text-neon-glow'
-              : 'border-slate-700 text-slate-400'
-          }`}
-        >
-          {t('shop.modal.payTon')}
-        </button>
-      </div>
+      <div className="mt-4">
+        <div className="flex items-center justify-between text-xs text-slate-400">
+          <span>{t('shop.modal.yourBalance')}</span>
+          <span className="font-mono tabular-nums text-slate-200">{balanceUsd.toFixed(2)} USDT</span>
+        </div>
 
-      {method === 'balance' ? (
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>{t('shop.modal.yourBalance')}</span>
-            <span className="font-mono tabular-nums text-slate-200">
-              {balanceUsd.toFixed(2)} USDT
-            </span>
-          </div>
-          {insufficient && (
+        {insufficient ? (
+          <>
             <p className="mt-2 text-xs text-red-400">{t('shop.modal.insufficientFunds')}</p>
-          )}
+            <button
+              type="button"
+              onClick={handleGoToWallet}
+              className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950"
+            >
+              {t('shop.modal.topUp')}
+            </button>
+          </>
+        ) : (
           <button
             type="button"
             onClick={handleConfirmBalance}
-            disabled={insufficient}
-            className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950 transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 w-full rounded-xl bg-neon-gradient py-2.5 text-sm font-semibold text-slate-950"
           >
             {t('shop.modal.confirm')}
           </button>
-        </div>
-      ) : (
-        <div className="mt-4">
-          {tonMessage && <p className="mb-2 text-xs text-slate-400">{tonMessage}</p>}
-          <button
-            type="button"
-            onClick={handleConfirmTon}
-            className="w-full rounded-xl border border-cyan-500/30 py-2.5 text-sm font-semibold text-neon-glow"
-          >
-            {t('shop.modal.payTon')}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <button type="button" onClick={onClose} className="mt-3 w-full py-2 text-xs text-slate-500">
         {t('shop.modal.cancel')}

@@ -7,13 +7,13 @@
 export type CurrencyCode = 'USD' | 'USDT' | 'COIN'
 
 /** Тип запису в журналі транзакцій. */
-export type TransactionType = 'deposit' | 'withdrawal'
+export type TransactionType = 'deposit' | 'withdrawal' | 'referral_bonus' | 'admin_credit'
 
 /** Статус транзакції (депозиту або виводу). */
 export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'rejected'
 
-/** Мережа переказу. */
-export type TransactionNetwork = 'TON' | 'TRC20'
+/** Мережа переказу. TON_USDT — токен USDT (jetton) у мережі TON, окремо від нативної монети TON. */
+export type TransactionNetwork = 'TON' | 'TON_USDT' | 'TRC20'
 
 /** Тип завдання. */
 export type TaskType = 'daily' | 'partner' | 'special'
@@ -36,10 +36,33 @@ export interface User {
   isVip: boolean
   referralCode: string
   referredBy?: string | null
+  /** Загальна сума реферальних бонусів, зароблених за весь час (3 рівні, лише з депозитів). */
+  totalRefEarned: number
   /** Чи є в користувача хоча б один завершений депозит — розблоковує вивід коштів. */
   hasCompletedDeposit: boolean
+  /** Права адміністратора — єдине джерело правди server-side, кожен admin_* RPC перевіряє незалежно. */
+  isAdmin: boolean
+  /** Статус амбассадора реферальної програми. */
+  isAmbassador: boolean
   createdAt: string
   updatedAt: string
+}
+
+/** Агрегована статистика одного рівня реферальної програми. */
+export interface ReferralLevelStats {
+  level: 1 | 2 | 3
+  invitedCount: number
+  totalDepositedUsd: number
+}
+
+/** Один запис у списку особисто запрошених (рівень 1). */
+export interface ReferralListItem {
+  /** Замасковане ім'я/username, напр. "alex***" — повне ім'я сервер не віддає. */
+  maskedName: string
+  totalDepositedUsd: number
+  /** Скільки саме з цього реферала зароблено (10% від його депозитів). */
+  earnedFromUsd: number
+  joinedAt: string
 }
 
 /** Шаблон майнера, доступний у каталозі для покупки (модель 10 днів / 150%). */
@@ -124,4 +147,51 @@ export interface Transaction {
   comment?: string | null
   createdAt: string
   processedAt?: string | null
+}
+
+// ---------------------------------------------------------------------------
+// Адмін-панель
+// ---------------------------------------------------------------------------
+
+/** Тип видачі депозиту вручну адміном. */
+export type AdminCreditType = 'balance_only' | 'real_deposit'
+
+/** Спосіб перевірки виконання завдання. */
+export type TaskVerificationType = 'subscription' | 'click'
+
+/** Рядок статистики амбассадора в адмін-панелі. */
+export interface AmbassadorStats {
+  telegramId: number
+  username?: string | null
+  firstName: string
+  level1Count: number
+  level2Count: number
+  level3Count: number
+  totalDepositedUsd: number
+}
+
+/** Заявка на вивід, що очікує модерації. */
+export interface PendingWithdrawal {
+  transactionId: string
+  telegramId: number
+  username?: string | null
+  firstName: string
+  amountUsd: number
+  feeUsd: number
+  network: TransactionNetwork
+  walletAddress: string
+  requestedAt: string
+  /** Сума всіх завершених депозитів користувача — сигнал довіри для модератора. */
+  userTotalDepositedUsd: number
+}
+
+/** Завдання в адмін-списку управління завданнями. */
+export interface AdminTask {
+  id: string
+  title: string
+  actionUrl?: string | null
+  rewardUsd: number
+  verificationType: TaskVerificationType
+  isActive: boolean
+  sortOrder: number
 }

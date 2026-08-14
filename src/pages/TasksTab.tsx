@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUserState } from '../context/UserStateContext'
 import { REQUIRED_LINKS, verifyTaskSubscription } from '../lib/subscription'
 import { getTelegramUser, haptic, openTelegramLink } from '../lib/telegram'
-import { PARTNER_TASKS } from '../lib/tasksCatalog'
+import { fetchActiveTasks, PARTNER_TASKS } from '../lib/tasksCatalog'
+import type { Task } from '../types'
 import SubscriptionRow from '../components/SubscriptionRow'
 import TaskCard from '../components/TaskCard'
 
@@ -13,6 +14,21 @@ export default function TasksTab() {
     useUserState()
 
   const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null)
+  const [tasks, setTasks] = useState<Task[]>(PARTNER_TASKS)
+
+  // Живий каталог завдань з таблиці `tasks` (адмін керує через
+  // AdminTab → admin_create_task/admin_set_task_active). Хардкод
+  // PARTNER_TASKS лишається як фолбек на час завантаження й на випадок
+  // помилки/порожньої таблиці — див. fetchActiveTasks.
+  useEffect(() => {
+    let cancelled = false
+    void fetchActiveTasks().then((loaded) => {
+      if (!cancelled) setTasks(loaded)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const subscribed = subscription.channel && subscription.chat
 
@@ -68,11 +84,11 @@ export default function TasksTab() {
       {/* Завдання від амбасадорів/партнерів — разова винагорода за підписку. */}
       <section>
         <h2 className="mb-2 px-1 text-sm font-semibold text-slate-300">{t('tasks.partners')}</h2>
-        {PARTNER_TASKS.length === 0 ? (
+        {tasks.length === 0 ? (
           <div className="glass-card p-6 text-center text-sm text-slate-400">{t('tasks.noTasks')}</div>
         ) : (
           <div className="space-y-3">
-            {PARTNER_TASKS.map((task) => (
+            {tasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}

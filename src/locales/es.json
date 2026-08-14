@@ -12,6 +12,10 @@
     "copied": "¡Copiado!",
     "comingSoon": "Próximamente"
   },
+  "header": {
+    "support": "Soporte",
+    "admin": "Panel de administración"
+  },
   "currency": {
     "usd": "USD",
     "usdt": "USDT",
@@ -23,7 +27,7 @@
     "shop": "Tienda",
     "mining": "Minería",
     "tasks": "Tareas",
-    "team": "Equipo",
+    "friends": "Amigos",
     "wallet": "Billetera",
     "profile": "Perfil"
   },
@@ -41,12 +45,9 @@
       "amount": "Monto",
       "return": "Retorno total",
       "duration": "Duración",
-      "paymentMethod": "Método de pago",
-      "payBalance": "Desde el saldo",
-      "payTon": "TON Connect",
       "yourBalance": "Tu saldo",
       "insufficientFunds": "Saldo insuficiente",
-      "tonComingSoon": "El pago mediante TON Connect estará disponible pronto",
+      "topUp": "Recargar saldo",
       "confirm": "Confirmar compra",
       "cancel": "Cancelar",
       "success": "¡Minero comprado con éxito!"
@@ -68,14 +69,20 @@
     "mandatoryWarning": "Sin suscripción al canal y al chat, las ganancias están congeladas",
     "subscribe": "Suscribirse"
   },
-  "team": {
-    "title": "Equipo",
-    "yourReferralLink": "Tu enlace de referido",
-    "invitedFriends": "Amigos invitados",
-    "teamIncome": "Ingresos del equipo",
-    "inviteFriend": "Invitar a un amigo",
-    "level": "Nivel",
-    "noReferrals": "Todavía no has invitado a nadie"
+  "friends": {
+    "yourLink": "Tu enlace de referido",
+    "linkNotConfigured": "El enlace aún no está configurado — contacta al administrador del proyecto",
+    "shareInTelegram": "Compartir en Telegram",
+    "shareText": "¡Únete a CloudMiner y empieza a minar directamente en Telegram!",
+    "totalEarned": "Ganado con referidos",
+    "levelTitle": "Nivel {{level}} ({{percent}}%)",
+    "invitedCount": "Invitados: {{count}}",
+    "depositsSum": "Total de depósitos: {{amount}} USDT",
+    "feedTitle": "Invitados directamente",
+    "noReferrals": "Todavía no has invitado a nadie",
+    "joined": "Se unió",
+    "depositLabel": "Depósito: {{amount}} USDT",
+    "earnedFromLabel": "Tus ganancias: {{amount}} USDT"
   },
   "wallet": {
     "title": "Billetera",
@@ -119,8 +126,8 @@
     "depositMemoTitle": "Transferencia en la red TON",
     "depositMemoNotice": "Asegúrate de incluir este comentario (memo) en la transferencia; de lo contrario, el pago no se acreditará automáticamente:",
     "yourTelegramId": "Tu ID de Telegram",
-    "depositTrc20Title": "Transferencia en la red TRC-20",
-    "depositTrc20Notice": "USDT en la red TRC-20 no tiene campo de comentario, por lo que se debe generar el monto — envía EXACTAMENTE ese monto, de lo contrario el pago no se acreditará automáticamente.",
+    "depositExactAmountTitle": "Transferencia en la red {{network}}",
+    "depositExactAmountNotice": "USDT en la red {{network}} no tiene campo de comentario, por lo que se debe generar el monto — envía EXACTAMENTE ese monto, de lo contrario el pago no se acreditará automáticamente.",
     "generateExactAmount": "Generar monto exacto",
     "generatingAmount": "Generando...",
     "exactAmountToSend": "Envía exactamente este monto",
@@ -162,5 +169,79 @@
       "statusFrozen": "Congelado"
     },
     "activeMiners": "Mineros activos"
+  },
+  "admin": {
+    "title": "Panel de administración",
+    "noAccess": "Acceso denegado",
+    "tabs": {
+      "ambassadors": "Embajadores",
+      "deposits": "Depósitos",
+      "withdrawals": "Retiros",
+      "tasks": "Tareas"
+    },
+    "ambassadors": {
+      "assignTitle": "Asignar embajador",
+      "telegramIdLabel": "ID de Telegram",
+      "assign": "Asignar",
+      "remove": "Quitar",
+      "listTitle": "Lista de embajadores",
+      "empty": "Todavía no hay embajadores",
+      "level1": "Niv. 1",
+      "level2": "Niv. 2",
+      "level3": "Niv. 3",
+      "totalDeposits": "Depósitos de la red",
+      "success": "Listo"
+    },
+    "deposit": {
+      "title": "Emisión manual de depósito",
+      "telegramIdLabel": "ID de Telegram del usuario",
+      "amountLabel": "Monto (USDT)",
+      "typeLabel": "Tipo de acreditación",
+      "typeBalanceOnly": "Solo al saldo (no desbloquea el retiro)",
+      "typeRealDeposit": "Como depósito real (desbloquea el retiro)",
+      "submit": "Emitir depósito",
+      "submitting": "Emitiendo...",
+      "success": "¡Listo! Nuevo saldo: {{balance}} USDT"
+    },
+    "withdrawals": {
+      "title": "Solicitudes de retiro",
+      "empty": "No hay solicitudes de retiro pendientes",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "reasonPlaceholder": "Motivo del rechazo (opcional)",
+      "approveSuccess": "Solicitud aprobada",
+      "rejectSuccess": "Solicitud rechazada, fondos reembolsados",
+      "error": "No se pudo procesar la solicitud",
+      "totalDeposits": "Depósitos totales: {{amount}} USDT"
+    },
+    "tasks": {
+      "createTitle": "Nueva tarea",
+      "titleLabel": "Título",
+      "linkLabel": "Enlace",
+      "rewardLabel": "Recompensa (USDT)",
+      "verificationLabel": "Tipo de verificación",
+      "verificationSubscription": "Comprobación de suscripción",
+      "verificationClick": "Solo un clic",
+      "create": "Crear",
+      "creating": "Creando...",
+      "listTitle": "Todas las tareas",
+      "empty": "Todavía no hay tareas",
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "delete": "Eliminar"
+    },
+    "errors": {
+      "not_admin": "Permisos de administrador insuficientes",
+      "user_not_found": "No se encontró ningún usuario con este ID de Telegram — primero debe abrir la aplicación al menos una vez",
+      "invalid_amount": "Monto inválido",
+      "invalid_credit_type": "Tipo de acreditación inválido",
+      "withdrawal_not_found": "Solicitud de retiro no encontrada",
+      "withdrawal_already_resolved": "Esta solicitud ya fue resuelta por otra acción",
+      "title_required": "Ingresa un título para la tarea",
+      "invalid_reward": "Recompensa inválida",
+      "invalid_verification_type": "Tipo de verificación inválido",
+      "task_not_found": "Tarea no encontrada",
+      "generic": "No se pudo completar la acción"
+    }
   }
 }

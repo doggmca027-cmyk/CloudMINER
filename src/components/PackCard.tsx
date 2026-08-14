@@ -32,6 +32,14 @@ export default function PackCard({ template, onBuy }: PackCardProps) {
       )}
 
       <p
+        className={`truncate text-xs font-bold uppercase tracking-wide ${
+          isVip ? 'text-premium-glow' : 'text-slate-300'
+        }`}
+      >
+        {template.name}
+      </p>
+
+      <p
         className={`text-2xl font-extrabold tabular-nums ${
           isVip ? 'text-premium-glow' : 'text-neon-glow'
         }`}

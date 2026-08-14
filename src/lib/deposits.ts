@@ -4,7 +4,15 @@ import { getTelegramUser } from './telegram'
 /** Мінімальна сума депозиту, USDT. Тримати синхронізовано з RPC credit_deposit / create_deposit_intent. */
 export const MIN_DEPOSIT_USD = 5
 
-export type DepositNetwork = 'TON' | 'TRC20'
+/**
+ * TON — нативна монета TON; TON_USDT — токен USDT (jetton) у тій самій
+ * мережі TON, той самий гаманець, атрибуція через memo/comment, як і TON.
+ * TRC20 — USDT без memo, атрибуція через deposit_intents (exact-amount).
+ */
+export type DepositNetwork = 'TON' | 'TON_USDT' | 'TRC20'
+
+/** Мережі, де немає поля коментаря — вимагають "намір депозиту" з точною сумою. */
+export type ExactAmountNetwork = 'TRC20'
 
 export interface DepositIntentResult {
   success: boolean
@@ -23,7 +31,10 @@ export interface DepositIntentResult {
  * зіставляє вхідний платіж із цим наміром за ТОЧНОЮ сумою — тому в
  * DepositPanel користувачу показується не кругла сума, а `exactAmountUsd`.
  */
-export async function createDepositIntent(baseAmountUsd: number): Promise<DepositIntentResult> {
+export async function createDepositIntent(
+  baseAmountUsd: number,
+  network: ExactAmountNetwork,
+): Promise<DepositIntentResult> {
   const telegramUser = getTelegramUser()
   const telegramId = telegramUser?.id ?? (import.meta.env.DEV ? 999_000_111 : null)
   if (!telegramId) {
@@ -34,6 +45,7 @@ export async function createDepositIntent(baseAmountUsd: number): Promise<Deposi
     p_telegram_id: telegramId,
     p_first_name: telegramUser?.first_name ?? 'Dev User',
     p_base_amount_usd: baseAmountUsd,
+    p_network: network,
   })
 
   if (error) {

@@ -163,3 +163,15 @@ export function openTelegramLink(url: string): void {
 export function closeWebApp(): void {
   getTelegramWebApp()?.close()
 }
+
+/**
+ * Нормалізує значення на кшталт `VITE_SUPPORT_TELEGRAM_LINK` до повного
+ * https://t.me/... URL — приймає як готовий URL, так і `@username` чи
+ * голий `username` без префіксу.
+ */
+export function resolveTelegramLink(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://t.me/${trimmed.replace(/^@/, '')}`
+}

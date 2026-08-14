@@ -12,6 +12,10 @@
     "copied": "Скопировано!",
     "comingSoon": "Скоро будет доступно"
   },
+  "header": {
+    "support": "Поддержка",
+    "admin": "Админ-панель"
+  },
   "currency": {
     "usd": "USD",
     "usdt": "USDT",
@@ -22,8 +26,8 @@
   "tabs": {
     "shop": "Магазин",
     "mining": "Майнинг",
+    "friends": "Друзья",
     "tasks": "Задания",
-    "team": "Команда",
     "wallet": "Кошелёк",
     "profile": "Профиль"
   },
@@ -41,12 +45,9 @@
       "amount": "Сумма",
       "return": "Вернётся всего",
       "duration": "Срок",
-      "paymentMethod": "Способ оплаты",
-      "payBalance": "С баланса",
-      "payTon": "TON Connect",
       "yourBalance": "Ваш баланс",
       "insufficientFunds": "Недостаточно средств на балансе",
-      "tonComingSoon": "Оплата через TON Connect скоро будет доступна",
+      "topUp": "Пополнить баланс",
       "confirm": "Подтвердить покупку",
       "cancel": "Отмена",
       "success": "Майнер успешно куплен!"
@@ -68,14 +69,20 @@
     "mandatoryWarning": "Без подписки на канал и чат начисления заморожены",
     "subscribe": "Подписаться"
   },
-  "team": {
-    "title": "Команда",
-    "yourReferralLink": "Ваша реферальная ссылка",
-    "invitedFriends": "Приглашено друзей",
-    "teamIncome": "Доход от команды",
-    "inviteFriend": "Пригласить друга",
-    "level": "Уровень",
-    "noReferrals": "Вы ещё никого не пригласили"
+  "friends": {
+    "yourLink": "Ваша реферальная ссылка",
+    "linkNotConfigured": "Ссылка ещё не настроена — обратитесь к администратору проекта",
+    "shareInTelegram": "Поделиться в Telegram",
+    "shareText": "Присоединяйся к CloudMiner и начни майнить прямо в Telegram!",
+    "totalEarned": "Заработано с рефералов",
+    "levelTitle": "{{level}} уровень ({{percent}}%)",
+    "invitedCount": "Приглашено: {{count}} чел.",
+    "depositsSum": "Сумма депозитов: {{amount}} USDT",
+    "feedTitle": "Лично приглашённые",
+    "noReferrals": "Вы ещё никого не пригласили",
+    "joined": "Присоединился",
+    "depositLabel": "Депозит: {{amount}} USDT",
+    "earnedFromLabel": "Ваш доход: {{amount}} USDT"
   },
   "wallet": {
     "title": "Кошелёк",
@@ -119,8 +126,8 @@
     "depositMemoTitle": "Перевод в сети TON",
     "depositMemoNotice": "Обязательно укажите этот комментарий (memo) к переводу — иначе платёж не будет зачислен автоматически:",
     "yourTelegramId": "Ваш Telegram ID",
-    "depositTrc20Title": "Перевод в сети TRC-20",
-    "depositTrc20Notice": "У USDT в сети TRC-20 нет поля для комментария, поэтому сумму нужно сгенерировать — отправьте ТОЧНО её, иначе платёж не будет зачислен автоматически.",
+    "depositExactAmountTitle": "Перевод в сети {{network}}",
+    "depositExactAmountNotice": "У USDT в сети {{network}} нет поля для комментария, поэтому сумму нужно сгенерировать — отправьте ТОЧНО её, иначе платёж не будет зачислен автоматически.",
     "generateExactAmount": "Сгенерировать точную сумму",
     "generatingAmount": "Генерируем...",
     "exactAmountToSend": "Отправьте точно эту сумму",
@@ -162,5 +169,79 @@
       "statusFrozen": "Заморожен"
     },
     "activeMiners": "Активные майнеры"
+  },
+  "admin": {
+    "title": "Админ-панель",
+    "noAccess": "Доступ запрещён",
+    "tabs": {
+      "ambassadors": "Амбассадоры",
+      "deposits": "Депозиты",
+      "withdrawals": "Выводы",
+      "tasks": "Задания"
+    },
+    "ambassadors": {
+      "assignTitle": "Назначить амбассадора",
+      "telegramIdLabel": "Telegram ID",
+      "assign": "Назначить",
+      "remove": "Снять",
+      "listTitle": "Список амбассадоров",
+      "empty": "Амбассадоров пока нет",
+      "level1": "Ур. 1",
+      "level2": "Ур. 2",
+      "level3": "Ур. 3",
+      "totalDeposits": "Депозиты сети",
+      "success": "Готово"
+    },
+    "deposit": {
+      "title": "Ручная выдача депозита",
+      "telegramIdLabel": "Telegram ID пользователя",
+      "amountLabel": "Сумма (USDT)",
+      "typeLabel": "Тип начисления",
+      "typeBalanceOnly": "Только на баланс (не разблокирует вывод)",
+      "typeRealDeposit": "Как реальный депозит (разблокирует вывод)",
+      "submit": "Выдать депозит",
+      "submitting": "Выдаём...",
+      "success": "Готово! Новый баланс: {{balance}} USDT"
+    },
+    "withdrawals": {
+      "title": "Заявки на вывод",
+      "empty": "Нет заявок на вывод",
+      "approve": "Подтвердить",
+      "reject": "Отклонить",
+      "reasonPlaceholder": "Причина отклонения (необязательно)",
+      "approveSuccess": "Заявка подтверждена",
+      "rejectSuccess": "Заявка отклонена, средства возвращены",
+      "error": "Не удалось обработать заявку",
+      "totalDeposits": "Депозитов на: {{amount}} USDT"
+    },
+    "tasks": {
+      "createTitle": "Новое задание",
+      "titleLabel": "Название",
+      "linkLabel": "Ссылка",
+      "rewardLabel": "Награда (USDT)",
+      "verificationLabel": "Тип проверки",
+      "verificationSubscription": "Проверка подписки",
+      "verificationClick": "Просто клик",
+      "create": "Создать",
+      "creating": "Создаём...",
+      "listTitle": "Все задания",
+      "empty": "Заданий пока нет",
+      "activate": "Включить",
+      "deactivate": "Выключить",
+      "delete": "Удалить"
+    },
+    "errors": {
+      "not_admin": "Недостаточно прав администратора",
+      "user_not_found": "Пользователь с таким Telegram ID не найден — он должен хотя бы раз открыть приложение",
+      "invalid_amount": "Некорректная сумма",
+      "invalid_credit_type": "Некорректный тип начисления",
+      "withdrawal_not_found": "Заявка на вывод не найдена",
+      "withdrawal_already_resolved": "Заявка уже обработана другим действием",
+      "title_required": "Укажите название задания",
+      "invalid_reward": "Некорректная награда",
+      "invalid_verification_type": "Некорректный тип проверки",
+      "task_not_found": "Задание не найдено",
+      "generic": "Не удалось выполнить действие"
+    }
   }
 }

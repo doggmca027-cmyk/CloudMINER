@@ -12,6 +12,10 @@
     "copied": "Kopyalandı!",
     "comingSoon": "Yakında"
   },
+  "header": {
+    "support": "Destek",
+    "admin": "Yönetici paneli"
+  },
   "currency": {
     "usd": "USD",
     "usdt": "USDT",
@@ -23,7 +27,7 @@
     "shop": "Mağaza",
     "mining": "Madencilik",
     "tasks": "Görevler",
-    "team": "Takım",
+    "friends": "Arkadaşlar",
     "wallet": "Cüzdan",
     "profile": "Profil"
   },
@@ -41,12 +45,9 @@
       "amount": "Tutar",
       "return": "Toplam getiri",
       "duration": "Süre",
-      "paymentMethod": "Ödeme yöntemi",
-      "payBalance": "Bakiyeden",
-      "payTon": "TON Connect",
       "yourBalance": "Bakiyeniz",
       "insufficientFunds": "Yetersiz bakiye",
-      "tonComingSoon": "TON Connect ile ödeme yakında kullanıma sunulacak",
+      "topUp": "Bakiye yükle",
       "confirm": "Satın almayı onayla",
       "cancel": "İptal",
       "success": "Madenci başarıyla satın alındı!"
@@ -68,14 +69,20 @@
     "mandatoryWarning": "Kanal ve sohbete abone olmadan kazançlar dondurulur",
     "subscribe": "Abone ol"
   },
-  "team": {
-    "title": "Takım",
-    "yourReferralLink": "Referans bağlantınız",
-    "invitedFriends": "Davet edilen arkadaşlar",
-    "teamIncome": "Takım geliri",
-    "inviteFriend": "Arkadaş davet et",
-    "level": "Seviye",
-    "noReferrals": "Henüz kimseyi davet etmediniz"
+  "friends": {
+    "yourLink": "Referans bağlantınız",
+    "linkNotConfigured": "Bağlantı henüz yapılandırılmadı — proje yöneticisiyle iletişime geçin",
+    "shareInTelegram": "Telegram'da paylaş",
+    "shareText": "CloudMiner'a katıl ve doğrudan Telegram içinde madencilik yapmaya başla!",
+    "totalEarned": "Referanslardan kazanılan",
+    "levelTitle": "Seviye {{level}} (%{{percent}})",
+    "invitedCount": "Davet edilen: {{count}}",
+    "depositsSum": "Toplam yatırım: {{amount}} USDT",
+    "feedTitle": "Doğrudan davet edilenler",
+    "noReferrals": "Henüz kimseyi davet etmediniz",
+    "joined": "Katıldı",
+    "depositLabel": "Yatırım: {{amount}} USDT",
+    "earnedFromLabel": "Kazancınız: {{amount}} USDT"
   },
   "wallet": {
     "title": "Cüzdan",
@@ -119,8 +126,8 @@
     "depositMemoTitle": "TON ağı transferi",
     "depositMemoNotice": "Transfere bu yorumu (memo) eklediğinizden emin olun — aksi takdirde ödeme otomatik olarak yatırılmaz:",
     "yourTelegramId": "Telegram ID'niz",
-    "depositTrc20Title": "TRC-20 ağı transferi",
-    "depositTrc20Notice": "TRC-20 ağındaki USDT'de yorum alanı yoktur, bu yüzden tutar oluşturulmalıdır — TAM OLARAK bu tutarı gönderin, aksi takdirde ödeme otomatik olarak yatırılmaz.",
+    "depositExactAmountTitle": "{{network}} ağı transferi",
+    "depositExactAmountNotice": "{{network}} ağındaki USDT'de yorum alanı yoktur, bu yüzden tutar oluşturulmalıdır — TAM OLARAK bu tutarı gönderin, aksi takdirde ödeme otomatik olarak yatırılmaz.",
     "generateExactAmount": "Tam tutar oluştur",
     "generatingAmount": "Oluşturuluyor...",
     "exactAmountToSend": "Tam olarak bu tutarı gönderin",
@@ -162,5 +169,79 @@
       "statusFrozen": "Donduruldu"
     },
     "activeMiners": "Aktif madenciler"
+  },
+  "admin": {
+    "title": "Yönetici paneli",
+    "noAccess": "Erişim reddedildi",
+    "tabs": {
+      "ambassadors": "Elçiler",
+      "deposits": "Yatırımlar",
+      "withdrawals": "Çekimler",
+      "tasks": "Görevler"
+    },
+    "ambassadors": {
+      "assignTitle": "Elçi ata",
+      "telegramIdLabel": "Telegram ID",
+      "assign": "Ata",
+      "remove": "Kaldır",
+      "listTitle": "Elçi listesi",
+      "empty": "Henüz elçi yok",
+      "level1": "Sv. 1",
+      "level2": "Sv. 2",
+      "level3": "Sv. 3",
+      "totalDeposits": "Ağ yatırımları",
+      "success": "Tamamlandı"
+    },
+    "deposit": {
+      "title": "Manuel yatırım verme",
+      "telegramIdLabel": "Kullanıcının Telegram ID'si",
+      "amountLabel": "Tutar (USDT)",
+      "typeLabel": "Bakiye türü",
+      "typeBalanceOnly": "Sadece bakiyeye (çekimi açmaz)",
+      "typeRealDeposit": "Gerçek yatırım olarak (çekimi açar)",
+      "submit": "Yatırımı ver",
+      "submitting": "Veriliyor...",
+      "success": "Tamamlandı! Yeni bakiye: {{balance}} USDT"
+    },
+    "withdrawals": {
+      "title": "Çekim talepleri",
+      "empty": "Bekleyen çekim talebi yok",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "reasonPlaceholder": "Reddetme nedeni (isteğe bağlı)",
+      "approveSuccess": "Talep onaylandı",
+      "rejectSuccess": "Talep reddedildi, bakiye iade edildi",
+      "error": "Talep işlenemedi",
+      "totalDeposits": "Toplam yatırım: {{amount}} USDT"
+    },
+    "tasks": {
+      "createTitle": "Yeni görev",
+      "titleLabel": "Başlık",
+      "linkLabel": "Bağlantı",
+      "rewardLabel": "Ödül (USDT)",
+      "verificationLabel": "Doğrulama türü",
+      "verificationSubscription": "Abonelik kontrolü",
+      "verificationClick": "Sadece tıklama",
+      "create": "Oluştur",
+      "creating": "Oluşturuluyor...",
+      "listTitle": "Tüm görevler",
+      "empty": "Henüz görev yok",
+      "activate": "Etkinleştir",
+      "deactivate": "Devre dışı bırak",
+      "delete": "Sil"
+    },
+    "errors": {
+      "not_admin": "Yönetici yetkisi yetersiz",
+      "user_not_found": "Bu Telegram ID'ye sahip kullanıcı bulunamadı — önce uygulamayı en az bir kez açmalı",
+      "invalid_amount": "Geçersiz tutar",
+      "invalid_credit_type": "Geçersiz bakiye türü",
+      "withdrawal_not_found": "Çekim talebi bulunamadı",
+      "withdrawal_already_resolved": "Bu talep başka bir işlemle zaten sonuçlandırıldı",
+      "title_required": "Lütfen bir görev başlığı girin",
+      "invalid_reward": "Geçersiz ödül",
+      "invalid_verification_type": "Geçersiz doğrulama türü",
+      "task_not_found": "Görev bulunamadı",
+      "generic": "İşlem tamamlanamadı"
+    }
   }
 }

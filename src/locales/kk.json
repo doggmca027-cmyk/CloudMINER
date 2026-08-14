@@ -12,6 +12,10 @@
     "copied": "Көшірілді!",
     "comingSoon": "Жақында"
   },
+  "header": {
+    "support": "Қолдау",
+    "admin": "Әкімші панелі"
+  },
   "currency": {
     "usd": "USD",
     "usdt": "USDT",
@@ -23,7 +27,7 @@
     "shop": "Дүкен",
     "mining": "Майнинг",
     "tasks": "Тапсырмалар",
-    "team": "Команда",
+    "friends": "Достар",
     "wallet": "Әмиян",
     "profile": "Профиль"
   },
@@ -41,12 +45,9 @@
       "amount": "Сома",
       "return": "Жалпы қайтарым",
       "duration": "Мерзімі",
-      "paymentMethod": "Төлем әдісі",
-      "payBalance": "Балансынан",
-      "payTon": "TON Connect",
       "yourBalance": "Сіздің балансыңыз",
       "insufficientFunds": "Баланста қаражат жеткіліксіз",
-      "tonComingSoon": "TON Connect арқылы төлем жақында қолжетімді болады",
+      "topUp": "Балансты толтыру",
       "confirm": "Сатып алуды растау",
       "cancel": "Бас тарту",
       "success": "Майнер сәтті сатып алынды!"
@@ -68,14 +69,20 @@
     "mandatoryWarning": "Арнаға және чатқа жазылмасаңыз, есептеулер тоқтатылады",
     "subscribe": "Жазылу"
   },
-  "team": {
-    "title": "Команда",
-    "yourReferralLink": "Сіздің реферал сілтемеңіз",
-    "invitedFriends": "Шақырылған достар",
-    "teamIncome": "Команда табысы",
-    "inviteFriend": "Досты шақыру",
-    "level": "Деңгей",
-    "noReferrals": "Сіз әлі ешкімді шақырған жоқсыз"
+  "friends": {
+    "yourLink": "Сіздің реферал сілтемеңіз",
+    "linkNotConfigured": "Сілтеме әлі теңшелмеген — жоба әкімшісіне хабарласыңыз",
+    "shareInTelegram": "Telegram-да бөлісу",
+    "shareText": "CloudMiner-ге қосылып, Telegram ішінде тікелей майнинг жасауды бастаңыз!",
+    "totalEarned": "Рефералдардан табылды",
+    "levelTitle": "{{level}} деңгей ({{percent}}%)",
+    "invitedCount": "Шақырылды: {{count}} адам",
+    "depositsSum": "Депозиттер сомасы: {{amount}} USDT",
+    "feedTitle": "Тікелей шақырылғандар",
+    "noReferrals": "Сіз әлі ешкімді шақырған жоқсыз",
+    "joined": "Қосылды",
+    "depositLabel": "Депозит: {{amount}} USDT",
+    "earnedFromLabel": "Сіздің табысыңыз: {{amount}} USDT"
   },
   "wallet": {
     "title": "Әмиян",
@@ -119,8 +126,8 @@
     "depositMemoTitle": "TON желісі арқылы аударым",
     "depositMemoNotice": "Аударымға осы түсініктемені (memo) міндетті түрде қосыңыз — әйтпесе төлем автоматты түрде есептелмейді:",
     "yourTelegramId": "Сіздің Telegram ID-іңіз",
-    "depositTrc20Title": "TRC-20 желісі арқылы аударым",
-    "depositTrc20Notice": "TRC-20 желісіндегі USDT-де түсініктеме өрісі жоқ, сондықтан сома жасалуы керек — дәл сол соманы жіберіңіз, әйтпесе төлем автоматты түрде есептелмейді.",
+    "depositExactAmountTitle": "{{network}} желісі арқылы аударым",
+    "depositExactAmountNotice": "{{network}} желісіндегі USDT-де түсініктеме өрісі жоқ, сондықтан сома жасалуы керек — дәл сол соманы жіберіңіз, әйтпесе төлем автоматты түрде есептелмейді.",
     "generateExactAmount": "Дәл соманы жасау",
     "generatingAmount": "Жасалуда...",
     "exactAmountToSend": "Дәл осы соманы жіберіңіз",
@@ -162,5 +169,79 @@
       "statusFrozen": "Тоқтатылған"
     },
     "activeMiners": "Белсенді майнерлер"
+  },
+  "admin": {
+    "title": "Әкімші панелі",
+    "noAccess": "Қолжетімділік жоқ",
+    "tabs": {
+      "ambassadors": "Елшілер",
+      "deposits": "Депозиттер",
+      "withdrawals": "Шығарулар",
+      "tasks": "Тапсырмалар"
+    },
+    "ambassadors": {
+      "assignTitle": "Елші тағайындау",
+      "telegramIdLabel": "Telegram ID",
+      "assign": "Тағайындау",
+      "remove": "Алып тастау",
+      "listTitle": "Елшілер тізімі",
+      "empty": "Әзірге елшілер жоқ",
+      "level1": "1-дең.",
+      "level2": "2-дең.",
+      "level3": "3-дең.",
+      "totalDeposits": "Желі депозиттері",
+      "success": "Дайын"
+    },
+    "deposit": {
+      "title": "Қолмен депозит беру",
+      "telegramIdLabel": "Пайдаланушының Telegram ID",
+      "amountLabel": "Сома (USDT)",
+      "typeLabel": "Есептеу түрі",
+      "typeBalanceOnly": "Тек балансқа (шығаруды ашпайды)",
+      "typeRealDeposit": "Нақты депозит ретінде (шығаруды ашады)",
+      "submit": "Депозит беру",
+      "submitting": "Берілуде...",
+      "success": "Дайын! Жаңа баланс: {{balance}} USDT"
+    },
+    "withdrawals": {
+      "title": "Шығару өтінімдері",
+      "empty": "Күтілетін шығару өтінімдері жоқ",
+      "approve": "Растау",
+      "reject": "Бас тарту",
+      "reasonPlaceholder": "Бас тарту себебі (міндетті емес)",
+      "approveSuccess": "Өтінім расталды",
+      "rejectSuccess": "Өтінімнен бас тартылды, қаражат қайтарылды",
+      "error": "Өтінімді өңдеу мүмкін болмады",
+      "totalDeposits": "Жалпы депозиттер: {{amount}} USDT"
+    },
+    "tasks": {
+      "createTitle": "Жаңа тапсырма",
+      "titleLabel": "Атауы",
+      "linkLabel": "Сілтеме",
+      "rewardLabel": "Сыйақы (USDT)",
+      "verificationLabel": "Тексеру түрі",
+      "verificationSubscription": "Жазылымды тексеру",
+      "verificationClick": "Жай ғана басу",
+      "create": "Жасау",
+      "creating": "Жасалуда...",
+      "listTitle": "Барлық тапсырмалар",
+      "empty": "Әзірге тапсырмалар жоқ",
+      "activate": "Қосу",
+      "deactivate": "Өшіру",
+      "delete": "Жою"
+    },
+    "errors": {
+      "not_admin": "Әкімші құқығы жеткіліксіз",
+      "user_not_found": "Бұл Telegram ID бойынша пайдаланушы табылмады — алдымен ол қолданбаны кемінде бір рет ашуы керек",
+      "invalid_amount": "Сома дұрыс емес",
+      "invalid_credit_type": "Есептеу түрі дұрыс емес",
+      "withdrawal_not_found": "Шығару өтінімі табылмады",
+      "withdrawal_already_resolved": "Бұл өтінім басқа әрекетпен қазірдің өзінде өңделген",
+      "title_required": "Тапсырма атауын енгізіңіз",
+      "invalid_reward": "Сыйақы дұрыс емес",
+      "invalid_verification_type": "Тексеру түрі дұрыс емес",
+      "task_not_found": "Тапсырма табылмады",
+      "generic": "Әрекетті орындау мүмкін болмады"
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Store, Pickaxe, Wallet, Target, type LucideIcon } from 'lucide-react'
+import { Store, Pickaxe, Users, Wallet, Target, type LucideIcon } from 'lucide-react'
 import { haptic } from '../lib/telegram'
 
 interface NavItem {
@@ -12,11 +12,12 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/shop', labelKey: 'tabs.shop', icon: Store },
   { to: '/', labelKey: 'tabs.mining', icon: Pickaxe },
+  { to: '/friends', labelKey: 'tabs.friends', icon: Users },
   { to: '/wallet', labelKey: 'tabs.wallet', icon: Wallet },
   { to: '/tasks', labelKey: 'tabs.tasks', icon: Target },
 ]
 
-/** Нижнє фіксоване меню з чотирьох основних вкладок застосунку. */
+/** Нижнє фіксоване меню з п'яти основних вкладок застосунку. */
 export default function Navigation() {
   const { t } = useTranslation()
 

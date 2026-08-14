@@ -12,6 +12,10 @@
     "copied": "Disalin!",
     "comingSoon": "Segera hadir"
   },
+  "header": {
+    "support": "Dukungan",
+    "admin": "Panel admin"
+  },
   "currency": {
     "usd": "USD",
     "usdt": "USDT",
@@ -23,7 +27,7 @@
     "shop": "Toko",
     "mining": "Mining",
     "tasks": "Misi",
-    "team": "Tim",
+    "friends": "Teman",
     "wallet": "Dompet",
     "profile": "Profil"
   },
@@ -41,12 +45,9 @@
       "amount": "Jumlah",
       "return": "Total pengembalian",
       "duration": "Durasi",
-      "paymentMethod": "Metode pembayaran",
-      "payBalance": "Dari saldo",
-      "payTon": "TON Connect",
       "yourBalance": "Saldo Anda",
       "insufficientFunds": "Saldo tidak mencukupi",
-      "tonComingSoon": "Pembayaran via TON Connect akan segera hadir",
+      "topUp": "Isi ulang saldo",
       "confirm": "Konfirmasi pembelian",
       "cancel": "Batal",
       "success": "Miner berhasil dibeli!"
@@ -68,14 +69,20 @@
     "mandatoryWarning": "Tanpa berlangganan channel dan chat, pendapatan dibekukan",
     "subscribe": "Berlangganan"
   },
-  "team": {
-    "title": "Tim",
-    "yourReferralLink": "Tautan referral Anda",
-    "invitedFriends": "Teman yang diundang",
-    "teamIncome": "Pendapatan tim",
-    "inviteFriend": "Undang teman",
-    "level": "Level",
-    "noReferrals": "Anda belum mengundang siapa pun"
+  "friends": {
+    "yourLink": "Tautan referral Anda",
+    "linkNotConfigured": "Tautan belum dikonfigurasi — hubungi admin proyek",
+    "shareInTelegram": "Bagikan di Telegram",
+    "shareText": "Bergabunglah dengan CloudMiner dan mulai menambang langsung di Telegram!",
+    "totalEarned": "Diperoleh dari referral",
+    "levelTitle": "Level {{level}} ({{percent}}%)",
+    "invitedCount": "Diundang: {{count}} orang",
+    "depositsSum": "Total deposit: {{amount}} USDT",
+    "feedTitle": "Diundang secara langsung",
+    "noReferrals": "Anda belum mengundang siapa pun",
+    "joined": "Bergabung",
+    "depositLabel": "Deposit: {{amount}} USDT",
+    "earnedFromLabel": "Penghasilan Anda: {{amount}} USDT"
   },
   "wallet": {
     "title": "Dompet",
@@ -119,8 +126,8 @@
     "depositMemoTitle": "Transfer jaringan TON",
     "depositMemoNotice": "Pastikan menyertakan komentar (memo) ini pada transfer — jika tidak, pembayaran tidak akan dikreditkan otomatis:",
     "yourTelegramId": "ID Telegram Anda",
-    "depositTrc20Title": "Transfer jaringan TRC-20",
-    "depositTrc20Notice": "USDT di jaringan TRC-20 tidak memiliki kolom komentar, jadi jumlahnya perlu dibuat — kirim jumlah ini dengan TEPAT, jika tidak pembayaran tidak akan dikreditkan otomatis.",
+    "depositExactAmountTitle": "Transfer jaringan {{network}}",
+    "depositExactAmountNotice": "USDT di jaringan {{network}} tidak memiliki kolom komentar, jadi jumlahnya perlu dibuat — kirim jumlah ini dengan TEPAT, jika tidak pembayaran tidak akan dikreditkan otomatis.",
     "generateExactAmount": "Buat jumlah pasti",
     "generatingAmount": "Membuat...",
     "exactAmountToSend": "Kirim jumlah ini dengan tepat",
@@ -162,5 +169,79 @@
       "statusFrozen": "Dibekukan"
     },
     "activeMiners": "Miner aktif"
+  },
+  "admin": {
+    "title": "Panel admin",
+    "noAccess": "Akses ditolak",
+    "tabs": {
+      "ambassadors": "Ambassador",
+      "deposits": "Deposit",
+      "withdrawals": "Penarikan",
+      "tasks": "Misi"
+    },
+    "ambassadors": {
+      "assignTitle": "Tetapkan ambassador",
+      "telegramIdLabel": "Telegram ID",
+      "assign": "Tetapkan",
+      "remove": "Hapus",
+      "listTitle": "Daftar ambassador",
+      "empty": "Belum ada ambassador",
+      "level1": "Lvl 1",
+      "level2": "Lvl 2",
+      "level3": "Lvl 3",
+      "totalDeposits": "Deposit jaringan",
+      "success": "Selesai"
+    },
+    "deposit": {
+      "title": "Penerbitan deposit manual",
+      "telegramIdLabel": "Telegram ID pengguna",
+      "amountLabel": "Jumlah (USDT)",
+      "typeLabel": "Jenis kredit",
+      "typeBalanceOnly": "Hanya ke saldo (tidak membuka penarikan)",
+      "typeRealDeposit": "Sebagai deposit nyata (membuka penarikan)",
+      "submit": "Terbitkan deposit",
+      "submitting": "Menerbitkan...",
+      "success": "Selesai! Saldo baru: {{balance}} USDT"
+    },
+    "withdrawals": {
+      "title": "Permintaan penarikan",
+      "empty": "Tidak ada permintaan penarikan tertunda",
+      "approve": "Setujui",
+      "reject": "Tolak",
+      "reasonPlaceholder": "Alasan penolakan (opsional)",
+      "approveSuccess": "Permintaan disetujui",
+      "rejectSuccess": "Permintaan ditolak, dana dikembalikan",
+      "error": "Gagal memproses permintaan",
+      "totalDeposits": "Total deposit: {{amount}} USDT"
+    },
+    "tasks": {
+      "createTitle": "Misi baru",
+      "titleLabel": "Judul",
+      "linkLabel": "Tautan",
+      "rewardLabel": "Hadiah (USDT)",
+      "verificationLabel": "Jenis verifikasi",
+      "verificationSubscription": "Periksa langganan",
+      "verificationClick": "Cukup klik",
+      "create": "Buat",
+      "creating": "Membuat...",
+      "listTitle": "Semua misi",
+      "empty": "Belum ada misi",
+      "activate": "Aktifkan",
+      "deactivate": "Nonaktifkan",
+      "delete": "Hapus"
+    },
+    "errors": {
+      "not_admin": "Hak akses admin tidak mencukupi",
+      "user_not_found": "Pengguna dengan Telegram ID ini tidak ditemukan — mereka harus membuka aplikasi setidaknya sekali terlebih dahulu",
+      "invalid_amount": "Jumlah tidak valid",
+      "invalid_credit_type": "Jenis kredit tidak valid",
+      "withdrawal_not_found": "Permintaan penarikan tidak ditemukan",
+      "withdrawal_already_resolved": "Permintaan ini sudah diproses oleh tindakan lain",
+      "title_required": "Masukkan judul misi",
+      "invalid_reward": "Hadiah tidak valid",
+      "invalid_verification_type": "Jenis verifikasi tidak valid",
+      "task_not_found": "Misi tidak ditemukan",
+      "generic": "Gagal menyelesaikan tindakan"
+    }
   }
 }
