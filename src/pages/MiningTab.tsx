@@ -35,6 +35,12 @@ export default function MiningTab() {
   // Захист від подвійного тапу на "Собрать" — claimMinerIncome тепер
   // мережевий виклик (RPC), а не миттєва локальна мутація.
   const [claiming, setClaiming] = useState(false)
+  // claimMinerIncome (куплені майнери) — реальний RPC, і раніше його
+  // результат тут ніяк не перевірявся: при помилці (напр. живий баг
+  // "column claimed_usd is ambiguous") кнопка мовчки не давала жодного
+  // ефекту — гаптик все одно бив "success", а баланс не змінювався,
+  // без жодного пояснення чому.
+  const [claimError, setClaimError] = useState<string | null>(null)
 
   const subscribed = isFullySubscribed(subscription)
 
@@ -60,6 +66,7 @@ export default function MiningTab() {
   async function handleClaimAll() {
     if (totalUnclaimedUsd <= 0 || claiming) return
     setClaiming(true)
+    setClaimError(null)
     haptic.impact('light')
 
     try {
@@ -74,9 +81,15 @@ export default function MiningTab() {
       }
 
       const claimable = purchasedMiners.filter((miner) => getUnclaimedUsd(miner, now) > 0)
-      await Promise.all(claimable.map((miner) => claimMinerIncome(miner.id)))
+      const results = await Promise.all(claimable.map((miner) => claimMinerIncome(miner.id)))
+      const failed = results.find((result) => !result.success)
 
-      haptic.notification('success')
+      if (failed) {
+        setClaimError(failed.error ?? 'unknown_error')
+        haptic.notification('error')
+      } else {
+        haptic.notification('success')
+      }
     } finally {
       setClaiming(false)
     }
@@ -133,6 +146,10 @@ export default function MiningTab() {
             <span aria-hidden>👆</span>
             {t('mining.card.collect')} (+{totalUnclaimedUsd.toFixed(2)})
           </button>
+
+          {claimError && (
+            <p className="mt-2 break-words text-xs text-red-400">{claimError}</p>
+          )}
         </div>
       </section>
 
