@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Crown, HandCoins, ListChecks, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { Crown, HandCoins, ListChecks, Megaphone, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { haptic } from '../lib/telegram'
 import { useUserState } from '../context/UserStateContext'
 import AmbassadorsSection from '../components/admin/AmbassadorsSection'
 import ManualDepositSection from '../components/admin/ManualDepositSection'
 import WithdrawalsSection from '../components/admin/WithdrawalsSection'
 import TasksSection from '../components/admin/TasksSection'
+import BroadcastSection from '../components/admin/BroadcastSection'
 
-type AdminSection = 'ambassadors' | 'deposit' | 'withdrawals' | 'tasks'
+type AdminSection = 'ambassadors' | 'deposit' | 'withdrawals' | 'tasks' | 'broadcast'
 
 interface SectionTab {
   key: AdminSection
@@ -21,6 +22,7 @@ const SECTION_TABS: SectionTab[] = [
   { key: 'deposit', labelKey: 'admin.tabs.deposits', icon: HandCoins },
   { key: 'withdrawals', labelKey: 'admin.tabs.withdrawals', icon: ShieldCheck },
   { key: 'tasks', labelKey: 'admin.tabs.tasks', icon: ListChecks },
+  { key: 'broadcast', labelKey: 'admin.tabs.broadcast', icon: Megaphone },
 ]
 
 /**
@@ -48,7 +50,7 @@ export default function AdminTab() {
     <div className="space-y-4">
       <h1 className="px-1 text-lg font-bold text-neon-glow">{t('admin.title')}</h1>
 
-      <div className="glass-card grid grid-cols-4 gap-1 p-1">
+      <div className="glass-card grid grid-cols-5 gap-1 p-1">
         {SECTION_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -68,6 +70,7 @@ export default function AdminTab() {
       {section === 'deposit' && <ManualDepositSection />}
       {section === 'withdrawals' && <WithdrawalsSection />}
       {section === 'tasks' && <TasksSection />}
+      {section === 'broadcast' && <BroadcastSection />}
     </div>
   )
 }

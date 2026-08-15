@@ -182,7 +182,8 @@
       "ambassadors": "Ambassador",
       "deposits": "Deposit",
       "withdrawals": "Penarikan",
-      "tasks": "Misi"
+      "tasks": "Misi",
+      "broadcast": "Siaran"
     },
     "ambassadors": {
       "assignTitle": "Tetapkan ambassador",
@@ -238,6 +239,19 @@
       "deactivate": "Nonaktifkan",
       "delete": "Hapus"
     },
+    "broadcast": {
+      "title": "Kirim siaran",
+      "recipients": "Penerima: {{count}}",
+      "textLabel": "Teks pesan",
+      "textPlaceholder": "Masukkan teks siaran...",
+      "photoLabel": "Tautan foto (opsional)",
+      "photoHint": "Jika foto disertakan, teks akan menjadi keterangannya — batasnya lebih pendek (1024 karakter, bukan 4096)",
+      "send": "Kirim siaran",
+      "sending": "Mengirim...",
+      "confirmWarning": "Pesan ini akan dikirim ke {{count}} pemain. Tindakan ini tidak dapat dibatalkan.",
+      "confirmSend": "Ya, kirim",
+      "success": "Siaran masuk antrean untuk {{count}} pemain"
+    },
     "errors": {
       "not_admin": "Hak akses admin tidak mencukupi",
       "user_not_found": "Pengguna dengan Telegram ID ini tidak ditemukan — mereka harus membuka aplikasi setidaknya sekali terlebih dahulu",
@@ -249,6 +263,7 @@
       "invalid_reward": "Hadiah tidak valid",
       "invalid_verification_type": "Jenis verifikasi tidak valid",
       "task_not_found": "Misi tidak ditemukan",
+      "text_required": "Masukkan teks pesan",
       "generic": "Gagal menyelesaikan tindakan"
     }
   }

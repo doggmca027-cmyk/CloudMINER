@@ -5,25 +5,39 @@
  * попередженням у логи), якщо TELEGRAM_BOT_TOKEN не налаштовано в секретах
  * функції (`supabase secrets set TELEGRAM_BOT_TOKEN=...`) — щоб відсутність
  * токена не валила все зарахування депозитів.
+ *
+ * `photoUrl` — опційно (розсилки з фото, admin_broadcast_message): якщо
+ * задано, використовує `sendPhoto` (текст стає підписом, ліміт Telegram —
+ * 1024 символи, менше за 4096 у звичайного sendMessage), інакше —
+ * звичайний sendMessage.
  */
-export async function sendTelegramMessage(chatId: string | number, text: string): Promise<void> {
+export async function sendTelegramMessage(
+  chatId: string | number,
+  text: string,
+  photoUrl?: string | null,
+): Promise<void> {
   const token = Deno.env.get('TELEGRAM_BOT_TOKEN')
   if (!token) {
     console.warn('[telegram] TELEGRAM_BOT_TOKEN не задано — сповіщення пропущено')
     return
   }
 
+  const method = photoUrl ? 'sendPhoto' : 'sendMessage'
+  const body = photoUrl
+    ? { chat_id: chatId, photo: photoUrl, caption: text, parse_mode: 'HTML' }
+    : { chat_id: chatId, text, parse_mode: 'HTML' }
+
   try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      body: JSON.stringify(body),
     })
     if (!res.ok) {
-      console.error('[telegram] sendMessage failed:', res.status, await res.text())
+      console.error(`[telegram] ${method} failed:`, res.status, await res.text())
     }
   } catch (err) {
-    console.error('[telegram] sendMessage threw:', err)
+    console.error(`[telegram] ${method} threw:`, err)
   }
 }
 

@@ -237,3 +237,32 @@ export async function deleteAdminTask(taskId: string): Promise<void> {
   })
   if (error) throw new Error(error.message)
 }
+
+// ---------------------------------------------------------------------------
+// Розсилка
+// ---------------------------------------------------------------------------
+
+/** Кількість гравців (рядків у `users`) — для UI перед підтвердженням розсилки. */
+export async function fetchBroadcastRecipientCount(): Promise<number> {
+  const { data, error } = await supabase.rpc('admin_user_count', {
+    p_admin_init_data: requireAdminInitData(),
+  })
+  if (error) throw new Error(error.message)
+  return Number(data ?? 0)
+}
+
+/**
+ * Ставить повідомлення в чергу для КОЖНОГО гравця (`notification_queue`,
+ * RPC `admin_broadcast_message`) — реальна відправка йде окремо, Edge
+ * Function `send-notifications` за розкладом. Повертає кількість
+ * поставлених у чергу повідомлень.
+ */
+export async function broadcastMessage(text: string, photoUrl?: string): Promise<number> {
+  const { data, error } = await supabase.rpc('admin_broadcast_message', {
+    p_admin_init_data: requireAdminInitData(),
+    p_text: text,
+    p_photo_url: photoUrl?.trim() || null,
+  })
+  if (error) throw new Error(error.message)
+  return Number(data ?? 0)
+}

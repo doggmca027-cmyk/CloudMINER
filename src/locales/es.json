@@ -182,7 +182,8 @@
       "ambassadors": "Embajadores",
       "deposits": "Depósitos",
       "withdrawals": "Retiros",
-      "tasks": "Tareas"
+      "tasks": "Tareas",
+      "broadcast": "Difusión"
     },
     "ambassadors": {
       "assignTitle": "Asignar embajador",
@@ -238,6 +239,19 @@
       "deactivate": "Desactivar",
       "delete": "Eliminar"
     },
+    "broadcast": {
+      "title": "Enviar mensaje masivo",
+      "recipients": "Destinatarios: {{count}}",
+      "textLabel": "Texto del mensaje",
+      "textPlaceholder": "Escribe el texto de la difusión...",
+      "photoLabel": "Enlace a la foto (opcional)",
+      "photoHint": "Si añades una foto, el texto se convierte en su leyenda — límite más corto (1024 caracteres en vez de 4096)",
+      "send": "Enviar difusión",
+      "sending": "Enviando...",
+      "confirmWarning": "Este mensaje se enviará a {{count}} jugadores. Esta acción no se puede deshacer.",
+      "confirmSend": "Sí, enviar",
+      "success": "Difusión en cola para {{count}} jugadores"
+    },
     "errors": {
       "not_admin": "Permisos de administrador insuficientes",
       "user_not_found": "No se encontró ningún usuario con este ID de Telegram — primero debe abrir la aplicación al menos una vez",
@@ -249,6 +263,7 @@
       "invalid_reward": "Recompensa inválida",
       "invalid_verification_type": "Tipo de verificación inválido",
       "task_not_found": "Tarea no encontrada",
+      "text_required": "Ingresa el texto del mensaje",
       "generic": "No se pudo completar la acción"
     }
   }

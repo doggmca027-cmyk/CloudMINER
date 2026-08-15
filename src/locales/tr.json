@@ -182,7 +182,8 @@
       "ambassadors": "Elçiler",
       "deposits": "Yatırımlar",
       "withdrawals": "Çekimler",
-      "tasks": "Görevler"
+      "tasks": "Görevler",
+      "broadcast": "Duyuru"
     },
     "ambassadors": {
       "assignTitle": "Elçi ata",
@@ -238,6 +239,19 @@
       "deactivate": "Devre dışı bırak",
       "delete": "Sil"
     },
+    "broadcast": {
+      "title": "Toplu mesaj gönder",
+      "recipients": "Alıcı sayısı: {{count}}",
+      "textLabel": "Mesaj metni",
+      "textPlaceholder": "Duyuru metnini girin...",
+      "photoLabel": "Fotoğraf bağlantısı (isteğe bağlı)",
+      "photoHint": "Fotoğraf eklenirse metin onun açıklaması olur — sınır daha kısadır (4096 yerine 1024 karakter)",
+      "send": "Duyuruyu gönder",
+      "sending": "Gönderiliyor...",
+      "confirmWarning": "Bu mesaj {{count}} oyuncuya gönderilecek. Bu işlem geri alınamaz.",
+      "confirmSend": "Evet, gönder",
+      "success": "Duyuru {{count}} oyuncu için kuyruğa alındı"
+    },
     "errors": {
       "not_admin": "Yönetici yetkisi yetersiz",
       "user_not_found": "Bu Telegram ID'ye sahip kullanıcı bulunamadı — önce uygulamayı en az bir kez açmalı",
@@ -249,6 +263,7 @@
       "invalid_reward": "Geçersiz ödül",
       "invalid_verification_type": "Geçersiz doğrulama türü",
       "task_not_found": "Görev bulunamadı",
+      "text_required": "Lütfen mesaj metnini girin",
       "generic": "İşlem tamamlanamadı"
     }
   }

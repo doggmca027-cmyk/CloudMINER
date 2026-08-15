@@ -16,6 +16,7 @@ const KNOWN_ERROR_CODES = new Set([
   'invalid_reward',
   'invalid_verification_type',
   'task_not_found',
+  'text_required',
 ])
 
 /** Повертає ключ i18n (`admin.errors.<code>` або `admin.errors.generic`) для повідомлення RPC-помилки. */

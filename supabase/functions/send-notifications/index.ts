@@ -28,6 +28,7 @@ interface QueuedNotification {
   id: string
   telegram_id: number
   message: string
+  photo_url: string | null
 }
 
 Deno.serve(async (_req) => {
@@ -36,7 +37,7 @@ Deno.serve(async (_req) => {
 
   const { data, error } = await supabase
     .from('notification_queue')
-    .select('id, telegram_id, message')
+    .select('id, telegram_id, message, photo_url')
     .is('sent_at', null)
     .order('created_at', { ascending: true })
     .limit(BATCH_SIZE)
@@ -51,7 +52,10 @@ Deno.serve(async (_req) => {
 
   for (const row of rows) {
     try {
-      await sendTelegramMessage(row.telegram_id, row.message)
+      // photo_url — розсилки з фото (admin_broadcast_message): sendPhoto
+      // замість sendMessage, текст стає підписом. Для решти черги
+      // (депозити/виводи тощо) photo_url завжди null — звичайний sendMessage.
+      await sendTelegramMessage(row.telegram_id, row.message, row.photo_url)
 
       // Позначаємо надісланим незалежно від фактичного успіху доставки
       // (sendTelegramMessage сама логує помилки Bot API — типово це

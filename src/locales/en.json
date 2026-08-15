@@ -182,7 +182,8 @@
       "ambassadors": "Ambassadors",
       "deposits": "Deposits",
       "withdrawals": "Withdrawals",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "broadcast": "Broadcast"
     },
     "ambassadors": {
       "assignTitle": "Assign an ambassador",
@@ -238,6 +239,19 @@
       "deactivate": "Deactivate",
       "delete": "Delete"
     },
+    "broadcast": {
+      "title": "Broadcast message",
+      "recipients": "Recipients: {{count}}",
+      "textLabel": "Message text",
+      "textPlaceholder": "Enter the broadcast text...",
+      "photoLabel": "Photo link (optional)",
+      "photoHint": "If a photo is set, the text becomes its caption — shorter limit (1024 chars instead of 4096)",
+      "send": "Send broadcast",
+      "sending": "Sending...",
+      "confirmWarning": "This message will be sent to {{count}} players. This action cannot be undone.",
+      "confirmSend": "Yes, send it",
+      "success": "Broadcast queued for {{count}} players"
+    },
     "errors": {
       "not_admin": "Insufficient admin rights",
       "user_not_found": "No user with this Telegram ID found — they must open the app at least once first",
@@ -249,6 +263,7 @@
       "invalid_reward": "Invalid reward",
       "invalid_verification_type": "Invalid verification type",
       "task_not_found": "Task not found",
+      "text_required": "Please enter the message text",
       "generic": "Failed to complete the action"
     }
   }
