@@ -10,7 +10,9 @@
     "back": "Atrás",
     "copy": "Copiar",
     "copied": "¡Copiado!",
-    "comingSoon": "Próximamente"
+    "comingSoon": "Próximamente",
+    "retry": "Reintentar",
+    "profileLoadError": "No se pudo cargar el perfil"
   },
   "header": {
     "support": "Soporte",

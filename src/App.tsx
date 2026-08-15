@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Route, Routes } from 'react-router-dom'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
@@ -12,7 +13,8 @@ import AdminTab from './pages/AdminTab'
 import { useUserState } from './context/UserStateContext'
 
 function App() {
-  const { loadUser, refreshMiners } = useUserState()
+  const { t } = useTranslation()
+  const { loadUser, refreshMiners, loadingUser, userLoadError } = useUserState()
 
   // Завантажує (або створює) профіль користувача й список куплених
   // майнерів із Supabase одразу при старті.
@@ -27,6 +29,24 @@ function App() {
         <Header />
       </div>
       <main className="mx-auto mt-4 max-w-md">
+        {/* Раніше невдалий get_or_create_user (мережа, протухлий initData,
+            збій RPC) лишав користувача на вічному "Загрузка..." у кожній
+            вкладці окремо, без жодного пояснення — помилка губилась у
+            console.warn. Показуємо її тут ОДИН раз, з реальним текстом і
+            кнопкою "Повторити", а не мовчазним нескінченним спінером. */}
+        {!loadingUser && userLoadError && (
+          <div className="glass-card mb-4 p-4 text-center text-sm">
+            <p className="font-semibold text-red-400">{t('common.profileLoadError')}</p>
+            <p className="mt-1 break-words text-xs text-slate-400">{userLoadError}</p>
+            <button
+              type="button"
+              onClick={() => void loadUser()}
+              className="mt-3 rounded-xl border border-cyan-500/30 px-4 py-1.5 text-xs font-medium text-neon-glow"
+            >
+              {t('common.retry')}
+            </button>
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<MiningTab />} />
           <Route path="/shop" element={<ShopTab />} />

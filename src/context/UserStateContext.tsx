@@ -23,6 +23,13 @@ interface UserStateContextValue {
   /** Профіль користувача, завантажений з Supabase (null, доки не завантажено). */
   user: User | null
   loadingUser: boolean
+  /**
+   * Причина, чому `user` лишається `null` ПІСЛЯ завершення завантаження
+   * (`loadingUser === false`) — `null`, якщо або ще вантажиться, або вже
+   * успішно завантажено. Дозволяє UI показати РЕАЛЬНУ помилку замість
+   * вічного "Загрузка..." (див. {@link LoadUserProfileResult}).
+   */
+  userLoadError: string | null
   /** Завантажує (або створює) профіль користувача й підтягує його баланс. Викликається з App.tsx при старті. */
   loadUser: () => Promise<void>
   /** Підтверджений баланс користувача, USDT. */
@@ -86,6 +93,7 @@ const UserStateContext = createContext<UserStateContextValue | null>(null)
 export function UserStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loadingUser, setLoadingUser] = useState(false)
+  const [userLoadError, setUserLoadError] = useState<string | null>(null)
   const [balanceUsd, setBalanceUsdState] = useState(0)
   const [miners, setMiners] = useState<UserMiner[]>([])
   const [loadingMiners, setLoadingMiners] = useState(false)
@@ -109,12 +117,22 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
 
   const loadUser = useCallback(async () => {
     setLoadingUser(true)
+    setUserLoadError(null)
     try {
-      const profile = await loadUserProfile()
-      if (profile) {
-        setUser(profile)
-        setBalanceUsd(profile.balanceUsd)
+      const result = await loadUserProfile()
+      if (result.status === 'ok') {
+        setUser(result.user)
+        setBalanceUsd(result.user.balanceUsd)
+      } else if (result.status === 'error') {
+        setUserLoadError(result.message)
       }
+      // 'no_init_data' — штатний стан поза Telegram, без помилки в UI.
+    } catch (err) {
+      // Не мало б статись (loadUserProfile сама ловить помилки RPC), але
+      // без цього catch будь-який неочікуваний виняток (напр. якщо сам
+      // supabase-js кине щось до повернення {data, error}) лишав би
+      // userLoadError порожнім і користувача — знову на вічному "Загрузка...".
+      setUserLoadError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoadingUser(false)
     }
@@ -146,6 +164,7 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loadingUser,
+      userLoadError,
       loadUser,
       balanceUsd,
       miners,
@@ -186,6 +205,7 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     [
       user,
       loadingUser,
+      userLoadError,
       loadUser,
       balanceUsd,
       miners,

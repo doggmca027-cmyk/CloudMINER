@@ -50,6 +50,22 @@ function mapUserRow(row: UserRow): User {
 }
 
 /**
+ * Результат {@link loadUserProfile} — на відміну від старого `User | null`,
+ * розрізняє ТРИ різних стани, а не два: раніше "немає підписаного
+ * initData" (штатно, поза Telegram) і "RPC реально впав з помилкою"
+ * (мережа, протухлий/невалідний initData, збій бекенда) обидва тихо
+ * ставали `null`, і UI (FriendsTab, Header) не міг відрізнити "ще
+ * вантажиться" від "вже безнадійно не завантажилось" — користувач бачив
+ * вічний "Загрузка..." без жодного пояснення навіть коли причина була
+ * зрозумілою (`error.message` губився в `console.warn`, недоступному
+ * нікому, крім розробника з відкритим DevTools).
+ */
+export type LoadUserProfileResult =
+  | { status: 'ok'; user: User }
+  | { status: 'no_init_data' }
+  | { status: 'error'; message: string }
+
+/**
  * Завантажує (або створює) профіль поточного користувача через RPC
  * `get_or_create_user` (SECURITY DEFINER, див.
  * supabase/migrations/*_get_or_create_user.sql та
@@ -64,12 +80,12 @@ function mapUserRow(row: UserRow): User {
  * значення в DevTools більше не можна.
  *
  * Поза Telegram (напр. `npm run dev` у звичайному браузері) підписаного
- * initData не існує — профіль просто не завантажується (повертає null),
- * так само, як і раніше для "немає telegram-користувача".
+ * initData не існує — `status: 'no_init_data'`, так само, як і раніше
+ * "немає telegram-користувача".
  */
-export async function loadUserProfile(): Promise<User | null> {
+export async function loadUserProfile(): Promise<LoadUserProfileResult> {
   const initData = getInitDataOrNull()
-  if (!initData) return null
+  if (!initData) return { status: 'no_init_data' }
 
   // Реферер береться зі start_param (?startapp=ref_123 / бот-команда
   // /start ref_123) — RPC сам ігнорує його, якщо користувач уже існував
@@ -84,11 +100,12 @@ export async function loadUserProfile(): Promise<User | null> {
   if (error) {
     // eslint-disable-next-line no-console
     console.warn('[userProfile] get_or_create_user не вдався:', error.message)
-    return null
+    return { status: 'error', message: error.message }
   }
 
   const row = Array.isArray(data) ? data[0] : data
-  return row ? mapUserRow(row as UserRow) : null
+  if (!row) return { status: 'error', message: 'empty_response' }
+  return { status: 'ok', user: mapUserRow(row as UserRow) }
 }
 
 /**

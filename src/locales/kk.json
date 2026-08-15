@@ -10,7 +10,9 @@
     "back": "Артқа",
     "copy": "Көшіру",
     "copied": "Көшірілді!",
-    "comingSoon": "Жақында"
+    "comingSoon": "Жақында",
+    "retry": "Қайталау",
+    "profileLoadError": "Профильді жүктеу сәтсіз аяқталды"
   },
   "header": {
     "support": "Қолдау",

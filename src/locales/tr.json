@@ -10,7 +10,9 @@
     "back": "Geri",
     "copy": "Kopyala",
     "copied": "Kopyalandı!",
-    "comingSoon": "Yakında"
+    "comingSoon": "Yakında",
+    "retry": "Tekrar dene",
+    "profileLoadError": "Profil yüklenemedi"
   },
   "header": {
     "support": "Destek",

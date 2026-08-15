@@ -10,7 +10,9 @@
     "back": "Kembali",
     "copy": "Salin",
     "copied": "Disalin!",
-    "comingSoon": "Segera hadir"
+    "comingSoon": "Segera hadir",
+    "retry": "Coba lagi",
+    "profileLoadError": "Gagal memuat profil"
   },
   "header": {
     "support": "Dukungan",

@@ -10,7 +10,9 @@
     "back": "Back",
     "copy": "Copy",
     "copied": "Copied!",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "retry": "Retry",
+    "profileLoadError": "Failed to load profile"
   },
   "header": {
     "support": "Support",

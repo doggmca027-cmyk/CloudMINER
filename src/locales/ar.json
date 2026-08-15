@@ -10,7 +10,9 @@
     "back": "رجوع",
     "copy": "نسخ",
     "copied": "تم النسخ!",
-    "comingSoon": "قريبًا"
+    "comingSoon": "قريبًا",
+    "retry": "إعادة المحاولة",
+    "profileLoadError": "فشل تحميل الملف الشخصي"
   },
   "header": {
     "support": "الدعم",
