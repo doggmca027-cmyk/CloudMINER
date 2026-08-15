@@ -7,6 +7,8 @@ interface TaskCardProps {
   /** Підписку щойно підтверджено Bot API, йде 24-годинне очікування на нагороду (subscription_checks). */
   pending: boolean
   verifying: boolean
+  /** Реальна причина, чому перевірка не вдалась (не плутати з "просто ще не підписаний") — напр. бот не може перевірити цей канал. */
+  errorMessage?: string
   onOpenLink: () => void
   onVerify: () => void
 }
@@ -17,7 +19,15 @@ interface TaskCardProps {
  * "отримати" тепер є 24-годинне очікування (pending) — сервер видасть
  * нагороду сам, якщо користувач не відпишеться (див. subscription_checks).
  */
-export default function TaskCard({ task, completed, pending, verifying, onOpenLink, onVerify }: TaskCardProps) {
+export default function TaskCard({
+  task,
+  completed,
+  pending,
+  verifying,
+  errorMessage,
+  onOpenLink,
+  onVerify,
+}: TaskCardProps) {
   const { t } = useTranslation()
 
   return (
@@ -64,6 +74,7 @@ export default function TaskCard({ task, completed, pending, verifying, onOpenLi
         </button>
       </div>
       {pending && <p className="mt-2 text-[11px] text-slate-400">{t('tasks.pendingNotice')}</p>}
+      {errorMessage && <p className="mt-2 break-words text-[11px] text-red-400">{errorMessage}</p>}
     </div>
   )
 }

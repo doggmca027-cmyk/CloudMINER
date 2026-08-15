@@ -13,6 +13,13 @@ export default function TasksTab() {
 
   const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>(PARTNER_TASKS)
+  // Раніше будь-яка помилка перевірки (напр. Bot API не може перевірити
+  // конкретний канал, або посилання завдання взагалі не резолвиться —
+  // живі кейси: приватне інвайт-посилання замість @username, бот не
+  // адмін у каналі партнера) тихо трактувалась як "просто не підписаний"
+  // — користувач тиснув "Перевірити" нескінченно, і нічого ніколи не
+  // спрацьовувало, без жодного пояснення чому.
+  const [taskErrors, setTaskErrors] = useState<Record<string, string>>({})
 
   // Живий каталог завдань + РЕАЛЬНИЙ статус виконання поточним користувачем
   // (з таблиці user_tasks/subscription_checks, через RPC list_user_tasks) —
@@ -40,6 +47,11 @@ export default function TasksTab() {
    */
   async function handleVerifyPartnerTask(task: Task) {
     setVerifyingTaskId(task.id)
+    setTaskErrors((errors) => {
+      const next = { ...errors }
+      delete next[task.id]
+      return next
+    })
     haptic.impact('light')
     try {
       if (task.verificationType === 'click') {
@@ -50,16 +62,23 @@ export default function TasksTab() {
         } else {
           if (result.error === 'already_claimed') {
             setTasks((list) => list.map((t) => (t.id === task.id ? { ...t, status: 'claimed' } : t)))
+          } else if (result.error) {
+            setTaskErrors((errors) => ({ ...errors, [task.id]: result.error! }))
           }
           haptic.notification('error')
         }
         return
       }
 
-      const isSubscribed = await verifyTaskSubscription(task.id)
-      if (isSubscribed) {
+      const result = await verifyTaskSubscription(task.id)
+      if (result.subscribed) {
         setTasks((list) => list.map((t) => (t.id === task.id ? { ...t, status: 'pending' } : t)))
         haptic.notification('success')
+      } else if (result.error) {
+        // Справжня помилка (не просто "ще не підписаний") — показуємо її,
+        // а не мовчазний warning-гаптик, за яким нічого не видно.
+        setTaskErrors((errors) => ({ ...errors, [task.id]: result.error! }))
+        haptic.notification('error')
       } else {
         haptic.notification('warning')
       }
@@ -84,6 +103,7 @@ export default function TasksTab() {
                 completed={task.status === 'claimed'}
                 pending={task.status === 'pending'}
                 verifying={verifyingTaskId === task.id}
+                errorMessage={taskErrors[task.id]}
                 onOpenLink={() => task.actionUrl && openTelegramLink(task.actionUrl)}
                 onVerify={() => handleVerifyPartnerTask(task)}
               />

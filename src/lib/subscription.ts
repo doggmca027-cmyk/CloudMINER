@@ -8,6 +8,21 @@ interface CheckSubscriptionResponse {
   error?: string
 }
 
+/** Результат перевірки — на відміну від голого `boolean`, несе РЕАЛЬНУ причину відмови (не лише "не підписаний"). */
+export interface TaskVerifyResult {
+  subscribed: boolean
+  /**
+   * Присутнє лише коли перевірка не змогла дати відповідь взагалі (не
+   * плутати з "subscribed: false" — це "не вдалось перевірити", а не
+   * "перевірено: не підписаний"). Живий приклад: завдання з приватним
+   * інвайт-посиланням замість @username — Bot API такий чат просто не
+   * резолвить (`task_action_url_not_a_telegram_link`), і без цього поля
+   * користувач бачив би те саме "не підписаний", скільки б не тиснув
+   * "Перевірити" й скільки б насправді не був підписаний.
+   */
+  error?: string
+}
+
 /**
  * Перевіряє членство в одній конкретній цілі через Edge Function
  * `check-subscription` (РЕАЛЬНИЙ Telegram Bot API `getChatMember` —
@@ -23,9 +38,9 @@ interface CheckSubscriptionResponse {
  * на бекенді (нешкідливо лишити), просто більше ніхто з клієнта їх не
  * викликає.
  */
-async function checkTarget(targetKey: string): Promise<boolean> {
+async function checkTarget(targetKey: string): Promise<TaskVerifyResult> {
   const initData = getInitDataOrNull()
-  if (!initData) return false
+  if (!initData) return { subscribed: false, error: 'no_init_data' }
 
   try {
     const { data, error } = await supabase.functions.invoke<CheckSubscriptionResponse>(
@@ -33,11 +48,16 @@ async function checkTarget(targetKey: string): Promise<boolean> {
       { body: { initData, targetKey } },
     )
     if (error || !data) throw error ?? new Error('check-subscription: порожня відповідь')
-    return data.subscribed
+    // Edge Function сама завжди повертає 200 + {subscribed, error?} —
+    // навіть для збоїв (невалідне завдання, getChatMember відмовив тощо),
+    // саме щоб `data` тут ніколи не було порожнім і `error` з відповіді
+    // доходив до виклику, а не губився в обгортці supabase-js для non-2xx.
+    return { subscribed: data.subscribed, error: data.error }
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     // eslint-disable-next-line no-console
     console.warn(`[subscription] check-subscription не вдався для "${targetKey}":`, err)
-    return false
+    return { subscribed: false, error: message }
   }
 }
 
@@ -47,6 +67,6 @@ async function checkTarget(targetKey: string): Promise<boolean> {
  * Bot API + реєстрація 24-годинного утримання, нагорода — окремою
  * плановою функцією.
  */
-export async function verifyTaskSubscription(taskId: string): Promise<boolean> {
+export async function verifyTaskSubscription(taskId: string): Promise<TaskVerifyResult> {
   return checkTarget(`task:${taskId}`)
 }

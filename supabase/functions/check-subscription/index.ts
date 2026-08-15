@@ -91,7 +91,17 @@ Deno.serve(async (req) => {
   try {
     target = await resolveTarget(supabase, targetKey)
   } catch (err) {
-    return jsonResponse({ error: String(err instanceof Error ? err.message : err) }, 400)
+    // 200, не 400: supabase-js `functions.invoke` для non-2xx статусу
+    // повертає `data: null` і загортає тіло відповіді у власний
+    // FunctionsHttpError (без прямого легкого доступу до `.error` з
+    // JSON) — клієнт (checkTarget у src/lib/subscription.ts) не міг
+    // прочитати РЕАЛЬНИЙ текст помилки (напр. "task_action_url_not_a_telegram_link"
+    // для завдання з приватним інвайт-посиланням замість @username, яке
+    // Bot API взагалі не вміє резолвити) і тихо трактував будь-яку
+    // помилку як "просто не підписаний" — той самий, уже застосований
+    // тут нижче для помилок getChatMember, патерн: 200 + `{subscribed:
+    // false, error}` в тілі, яке `data` завжди коректно містить.
+    return jsonResponse({ subscribed: false, error: String(err instanceof Error ? err.message : err) }, 200)
   }
 
   const membership = await checkChatMembership(target.chatRef, telegramId)
