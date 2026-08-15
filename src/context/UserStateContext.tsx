@@ -92,6 +92,7 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
     channel: false,
     chat: false,
+    tx: false,
   })
   const [checkingSubscription, setCheckingSubscription] = useState(false)
 

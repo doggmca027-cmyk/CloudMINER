@@ -19,9 +19,9 @@ const NETWORK_OPTIONS: Array<{ code: DepositNetwork; label: string }> = [
 ]
 
 const DEPOSIT_ADDRESSES: Record<DepositNetwork, string> = {
-  TON: import.meta.env.VITE_DEPOSIT_ADDRESS_TON,
-  TON_USDT: import.meta.env.VITE_DEPOSIT_ADDRESS_TON,
-  TRC20: import.meta.env.VITE_DEPOSIT_ADDRESS_TRC20,
+  TON: import.meta.env.VITE_DEPOSIT_ADDRESS_TON || '',
+  TON_USDT: import.meta.env.VITE_DEPOSIT_ADDRESS_TON || '',
+  TRC20: import.meta.env.VITE_DEPOSIT_ADDRESS_TRC20 || '',
 }
 
 /** TON і TON_USDT — обидва підтримують вільний текстовий comment/memo із telegram_id. */

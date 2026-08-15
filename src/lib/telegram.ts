@@ -188,10 +188,15 @@ export function closeWebApp(): void {
 /**
  * Нормалізує значення на кшталт `VITE_SUPPORT_TELEGRAM_LINK` до повного
  * https://t.me/... URL — приймає як готовий URL, так і `@username` чи
- * голий `username` без префіксу.
+ * голий `username` без префіксу. `raw` — саме `string | undefined`, а не
+ * `string`: якщо змінна оточення не задана в білді взагалі (а не просто
+ * порожня), `import.meta.env.VITE_...` повертає `undefined`, і виклик тут
+ * — на верхньому рівні модуля Header.tsx, тобто ще до рендеру будь-чого —
+ * раніше валив увесь застосунок одразу при завантаженні ("Cannot read
+ * properties of undefined (reading 'trim')").
  */
-export function resolveTelegramLink(raw: string): string {
-  const trimmed = raw.trim()
+export function resolveTelegramLink(raw: string | undefined): string {
+  const trimmed = (raw ?? '').trim()
   if (!trimmed) return ''
   if (/^https?:\/\//i.test(trimmed)) return trimmed
   return `https://t.me/${trimmed.replace(/^@/, '')}`
