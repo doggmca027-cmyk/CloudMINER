@@ -15,6 +15,7 @@ interface ImportMetaEnv {
   readonly VITE_DEPOSIT_ADDRESS_TRC20: string | undefined
   readonly VITE_TELEGRAM_BOT_USERNAME: string | undefined
   readonly VITE_SUPPORT_TELEGRAM_LINK: string | undefined
+  readonly VITE_CHANNEL_LINK: string | undefined
   readonly VITE_TRANSACTIONS_CHANNEL_LINK: string | undefined
 }
 

@@ -3,54 +3,14 @@ import { getInitDataOrNull } from './telegram'
 import type { Task } from '../types'
 
 /**
- * Фолбек-дані на випадок, якщо таблиця `tasks` порожня або запит не
- * вдався (напр. немає мережі) — щоб TasksTab не показував порожній екран
- * при першому запуску, поки адмін ще не додав жодного реального завдання.
+ * Фолбек на випадок, якщо таблиця `tasks` порожня або запит не вдався
+ * (напр. немає мережі). Раніше тут були 3 демо-заглушки з фейковими
+ * посиланнями (`..._demo`), які ніколи не вели на реальні канали
+ * партнерів/амбасадорів — прибрано за прямим запитом. Порожній масив:
+ * TasksTab у цьому разі просто показує чесний стан "завдань поки немає"
+ * (`t('tasks.noTasks')`), а не вигадані завдання.
  */
-export const PARTNER_TASKS: Task[] = [
-  {
-    id: 'partner-alpha-signals',
-    type: 'partner',
-    title: 'Alpha Crypto Signals',
-    description: 'Подпишитесь на канал партнёра',
-    iconUrl: '📡',
-    rewardUsd: 0.1,
-    rewardCoin: 0,
-    actionUrl: 'https://t.me/alpha_crypto_signals_demo',
-    status: 'available',
-    verificationType: 'subscription',
-    isActive: true,
-    sortOrder: 0,
-  },
-  {
-    id: 'partner-crypto-news',
-    type: 'partner',
-    title: 'Crypto News Hub',
-    description: 'Подпишитесь на новостной канал',
-    iconUrl: '📰',
-    rewardUsd: 0.05,
-    rewardCoin: 0,
-    actionUrl: 'https://t.me/crypto_news_hub_demo',
-    status: 'available',
-    verificationType: 'subscription',
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    id: 'partner-ambassador-club',
-    type: 'partner',
-    title: 'Ambassador Club',
-    description: 'Вступите в клуб амбассадоров проекта',
-    iconUrl: '🎖️',
-    rewardUsd: 0.2,
-    rewardCoin: 0,
-    actionUrl: 'https://t.me/ambassador_club_demo',
-    status: 'available',
-    verificationType: 'subscription',
-    isActive: true,
-    sortOrder: 2,
-  },
-]
+export const PARTNER_TASKS: Task[] = []
 
 interface TaskRow {
   id: string

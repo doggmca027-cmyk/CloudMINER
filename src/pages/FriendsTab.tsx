@@ -29,11 +29,20 @@ export default function FriendsTab() {
     let cancelled = false
     setLoadingList(true)
 
+    // Явний try/catch (а не лише .finally) — fetchReferralStats/List самі
+    // ловлять помилки RPC й повертають безпечні дефолти, але додатковий
+    // захист тут нічого не коштує: неопрацьований reject із Promise.all
+    // (напр. мережевий збій ще до відповіді RPC) інакше міг би лишити
+    // вкладку у вічному "завантаження" без жодного повідомлення про помилку.
     Promise.all([fetchReferralStats(), fetchReferralList()])
       .then(([statsResult, listResult]) => {
         if (cancelled) return
         setStats(statsResult)
         setList(listResult)
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.warn('[FriendsTab] не вдалось завантажити реферальні дані:', err)
       })
       .finally(() => {
         if (!cancelled) setLoadingList(false)

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { getInitDataOrNull } from './telegram'
+import { getInitDataOrNull, resolveTelegramLink } from './telegram'
 
 /** Статус підписки на обов'язкові ресурси спільноти. */
 export interface SubscriptionStatus {
@@ -10,17 +10,29 @@ export interface SubscriptionStatus {
 
 /**
  * Посилання на офіційний канал і канал транзакцій, підписка на які
- * активує free-майнер. `tx` — опційний `VITE_TRANSACTIONS_CHANNEL_LINK`
- * (порожньо, доки не налаштовано — той самий патерн, що й
- * VITE_DEPOSIT_ADDRESS_TON / VITE_SUPPORT_TELEGRAM_LINK: UI ховає
- * посилання, а не показує фейкове).
+ * активує free-майнер.
+ *
+ * `channel` — опційний `VITE_CHANNEL_LINK`, з фолбеком на реальний канал
+ * проєкту (@CloudMiner_News). Раніше тут був хардкод-плейсхолдер
+ * "cloudminer_channel", який ніколи не існував — бекенд (Bot API перевірка
+ * через MANDATORY_CHANNEL_USERNAME) вже давно вказував на правильний
+ * канал, а клієнтське посилання "Підписатись" — ні, тож користувачі
+ * підписувались не туди, куди їх реально перевіряли.
+ *
+ * `tx` — опційний `VITE_TRANSACTIONS_CHANNEL_LINK` (порожньо, доки не
+ * налаштовано — той самий патерн, що й VITE_DEPOSIT_ADDRESS_TON /
+ * VITE_SUPPORT_TELEGRAM_LINK: UI ховає посилання, а не показує фейкове).
+ *
+ * Обидва прогнані через {@link resolveTelegramLink} — в `.env` ці змінні
+ * реально задають голим `username` (без "https://t.me/"), і без нормалізації
+ * такий рядок лишався б непридатним посиланням у кнопці "Підписатись".
  *
  * Обов'язкова підписка на чат проєкту прибрана — free-майнер тепер
  * розблоковується лише каналом (+ каналом транзакцій, якщо налаштовано).
  */
 export const REQUIRED_LINKS = {
-  channel: 'https://t.me/cloudminer_channel',
-  tx: (import.meta.env.VITE_TRANSACTIONS_CHANNEL_LINK as string | undefined) || '',
+  channel: resolveTelegramLink(import.meta.env.VITE_CHANNEL_LINK) || 'https://t.me/CloudMiner_News',
+  tx: resolveTelegramLink(import.meta.env.VITE_TRANSACTIONS_CHANNEL_LINK),
 }
 
 const MOCK_SUBSCRIBED_KEY = 'cloudminer:mockSubscribed'
