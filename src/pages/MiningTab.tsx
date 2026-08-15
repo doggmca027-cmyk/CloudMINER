@@ -1,14 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { UserMiner } from '../types'
-import {
-  createFreeMiner,
-  getRatePerSecond,
-  getUnclaimedUsd,
-  isMinerCompleted,
-  pauseMiner,
-  resumeMiner,
-} from '../lib/mining'
+import { getRatePerSecond, getUnclaimedUsd, isMinerCompleted } from '../lib/mining'
+import { ensureFreeMinerRpc, setFreeMinerActiveRpc } from '../lib/minersApi'
 import { haptic } from '../lib/telegram'
 import { isFullySubscribed } from '../lib/subscription'
 import { useUserState } from '../context/UserStateContext'
@@ -21,8 +14,8 @@ export default function MiningTab() {
   const { t } = useTranslation()
   const {
     balanceUsd,
-    miners: purchasedMiners,
-    addBalance,
+    miners: allMiners,
+    refreshMiners,
     claimMinerIncome,
     subscription,
     checkingSubscription,
@@ -31,15 +24,13 @@ export default function MiningTab() {
 
   // Тікає кожні 100мс — від нього перераховуються всі "живі" суми на екрані.
   const [now, setNow] = useState(() => Date.now())
-  const [freeMiner, setFreeMiner] = useState<UserMiner>(() => createFreeMiner())
   // Захист від подвійного тапу на "Собрать" — claimMinerIncome тепер
   // мережевий виклик (RPC), а не миттєва локальна мутація.
   const [claiming, setClaiming] = useState(false)
-  // claimMinerIncome (куплені майнери) — реальний RPC, і раніше його
-  // результат тут ніяк не перевірявся: при помилці (напр. живий баг
-  // "column claimed_usd is ambiguous") кнопка мовчки не давала жодного
-  // ефекту — гаптик все одно бив "success", а баланс не змінювався,
-  // без жодного пояснення чому.
+  // claimMinerIncome — реальний RPC, і раніше його результат тут ніяк не
+  // перевірявся: при помилці (напр. живий баг "column claimed_usd is
+  // ambiguous") кнопка мовчки не давала жодного ефекту — гаптик все одно
+  // бив "success", а баланс не змінювався, без жодного пояснення чому.
   const [claimError, setClaimError] = useState<string | null>(null)
 
   const subscribed = isFullySubscribed(subscription)
@@ -49,14 +40,32 @@ export default function MiningTab() {
     return () => clearInterval(intervalId)
   }, [])
 
-  // Заморожує/розморожує free-майнер услід за статусом підписки (перевіряється
-  // тут або на вкладці Задания — стан підписки спільний через UserStateContext).
+  // Free-майнер тепер РЕАЛЬНИЙ персистентний рядок user_miners (is_free),
+  // а не React-стан, що скидався до нуля при кожному розмонтуванні
+  // MiningTab (вихід на іншу вкладку й назад) — раніше це давало
+  // необмежене поновлення капу free-майнера. ensure_free_miner — idempotent
+  // (unique-індекс не дає створити другий), тож тут просто гарантуємо, що
+  // рядок існує, і перечитуємо повний список.
   useEffect(() => {
-    const atMs = Date.now()
-    setFreeMiner((miner) => (subscribed ? resumeMiner(miner, atMs) : pauseMiner(miner, atMs)))
+    void ensureFreeMinerRpc().then(() => refreshMiners())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Заморожує/розморожує free-майнер услід за статусом підписки — тепер
+  // теж на сервері (set_free_miner_active), не в локальному стані.
+  // Пропускаємо самий перший рендер (subscribed ще не встиг стати
+  // "справжнім" — початковий false до першої перевірки), щоб не бити
+  // зайвий запит одразу при вході.
+  const didMount = useRef(false)
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true
+      return
+    }
+    void setFreeMinerActiveRpc(subscribed).then(() => refreshMiners())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribed])
 
-  const allMiners = [freeMiner, ...purchasedMiners]
   const totalUnclaimedUsd = allMiners.reduce((sum, miner) => sum + getUnclaimedUsd(miner, now), 0)
   const liveBalanceUsd = balanceUsd + totalUnclaimedUsd
   const totalRatePerSecond = allMiners
@@ -70,17 +79,10 @@ export default function MiningTab() {
     haptic.impact('light')
 
     try {
-      // Free-майнер — локальний приріст (не персистентний, див. коментар у
-      // UserStateContext.tsx). Куплені майнери — реальний RPC-виклик на
-      // кожен майнер з непустим доходом; сервер сам рахує точну суму на
-      // момент запиту (не довіряє `amount` з клієнта).
-      const freeAmount = getUnclaimedUsd(freeMiner, now)
-      if (freeAmount > 0) {
-        setFreeMiner((miner) => ({ ...miner, claimedUsd: miner.claimedUsd + freeAmount }))
-        addBalance(freeAmount)
-      }
-
-      const claimable = purchasedMiners.filter((miner) => getUnclaimedUsd(miner, now) > 0)
+      // Усі майнери (включно з free) — реальний RPC-виклик на кожен з
+      // непустим доходом; сервер сам рахує точну суму на момент запиту
+      // (не довіряє `amount` з клієнта).
+      const claimable = allMiners.filter((miner) => getUnclaimedUsd(miner, now) > 0)
       const results = await Promise.all(claimable.map((miner) => claimMinerIncome(miner.id)))
       const failed = results.find((result) => !result.success)
 

@@ -42,7 +42,7 @@ function mapUserMinerRow(row: UserMinerRow): UserMiner {
   }
 }
 
-/** Майнери поточного користувача. Порожній список поза Telegram (немає initData) — не помилка. */
+/** Майнери поточного користувача (включно з free-майнером, якщо вже створений). Порожній список поза Telegram (немає initData) — не помилка. */
 export async function listUserMiners(): Promise<UserMiner[]> {
   const initData = getInitDataOrNull()
   if (!initData) return []
@@ -54,6 +54,55 @@ export async function listUserMiners(): Promise<UserMiner[]> {
     return []
   }
   return ((data ?? []) as UserMinerRow[]).map(mapUserMinerRow)
+}
+
+/**
+ * Створює (якщо ще нема) або повертає ІСНУЮЧИЙ free-майнер користувача —
+ * RPC `ensure_free_miner`, idempotent (унікальний частковий індекс
+ * `user_miners_one_free_per_user` не дає створити другий). Викликається
+ * при вході на MiningTab; сам прогрес/дохід після цього читається через
+ * звичайний {@link listUserMiners} (повертає всі майнери користувача,
+ * включно з is_free).
+ */
+export async function ensureFreeMinerRpc(): Promise<UserMiner | null> {
+  const initData = getInitDataOrNull()
+  if (!initData) return null
+
+  const { data, error } = await supabase.rpc('ensure_free_miner', { p_init_data: initData })
+  if (error || !data) {
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[minersApi] ensure_free_miner не вдався:', error.message)
+    }
+    return null
+  }
+  const row = Array.isArray(data) ? data[0] : data
+  return row ? mapUserMinerRow(row as UserMinerRow) : null
+}
+
+/**
+ * Пауза/відновлення free-майнера НА СЕРВЕРІ (RPC `set_free_miner_active`) —
+ * викликається услід за реальним статусом підписки (checkSubscription).
+ * На відміну від старих клієнтських pauseMiner/resumeMiner, стан
+ * лишається персистентним і не скидається при розмонтуванні MiningTab.
+ */
+export async function setFreeMinerActiveRpc(active: boolean): Promise<UserMiner | null> {
+  const initData = getInitDataOrNull()
+  if (!initData) return null
+
+  const { data, error } = await supabase.rpc('set_free_miner_active', {
+    p_init_data: initData,
+    p_active: active,
+  })
+  if (error || !data) {
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[minersApi] set_free_miner_active не вдався:', error.message)
+    }
+    return null
+  }
+  const row = Array.isArray(data) ? data[0] : data
+  return row ? mapUserMinerRow(row as UserMinerRow) : null
 }
 
 export interface PurchaseMinerResult {
