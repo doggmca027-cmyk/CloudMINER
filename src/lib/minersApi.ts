@@ -42,17 +42,24 @@ function mapUserMinerRow(row: UserMinerRow): UserMiner {
   }
 }
 
-/** Майнери поточного користувача (включно з free-майнером, якщо вже створений). Порожній список поза Telegram (немає initData) — не помилка. */
+/**
+ * Майнери поточного користувача (включно з free-майнером, якщо вже
+ * створений). Порожній масив поза Telegram (немає initData) — штатно, не
+ * помилка. На відміну від попередньої версії, РЕАЛЬНА помилка RPC (мережа
+ * тощо) тепер кидається, а не мовчки повертається як `[]` — викликається
+ * не лише один раз при вході, а й періодично у фоні
+ * (UserStateContext), і "порожній список" від збою мережі раніше міг
+ * стерти з екрана вже завантажені майнери через тимчасовий обрив
+ * з'єднання. Виклики, яким справді достатньо "не вдалось — вважай, що
+ * порожньо", самі ловлять цей виняток (жоден наразі так не робить).
+ */
 export async function listUserMiners(): Promise<UserMiner[]> {
   const initData = getInitDataOrNull()
   if (!initData) return []
 
   const { data, error } = await supabase.rpc('list_user_miners', { p_init_data: initData })
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.warn('[minersApi] list_user_miners не вдався:', error.message)
-    return []
-  }
+  if (error) throw error
+
   return ((data ?? []) as UserMinerRow[]).map(mapUserMinerRow)
 }
 

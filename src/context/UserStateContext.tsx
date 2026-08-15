@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -115,24 +116,48 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     setBalanceUsdState(next)
   }
 
+  // Синхронний прапорець "профіль уже колись успішно завантажувався" — НЕ
+  // React-стан (щоб не потрапити в залежності loadUser і не зламати його
+  // стабільну ідентичність, від якої залежить ефект автозавантаження в
+  // App.tsx). Потрібен, щоб відрізнити ПЕРШЕ завантаження (нема що
+  // показати, доки не завантажиться — помилку варто показати) від
+  // фонового періодичного опитування (дані вже є на екрані, і тимчасовий
+  // збій мережі не повинен ховати їх за страшним банером помилки).
+  const hasLoadedOnceRef = useRef(false)
+
   const loadUser = useCallback(async () => {
     setLoadingUser(true)
-    setUserLoadError(null)
     try {
       const result = await loadUserProfile()
       if (result.status === 'ok') {
         setUser(result.user)
         setBalanceUsd(result.user.balanceUsd)
+        setUserLoadError(null)
+        hasLoadedOnceRef.current = true
       } else if (result.status === 'error') {
-        setUserLoadError(result.message)
+        if (hasLoadedOnceRef.current) {
+          // Фонове опитування — дані вже на екрані, лишаємо їх як є й лише
+          // тихо логуємо. Показ банера тут прибрав би вже робочий профіль
+          // з екрана через щось таке ж дрібне, як миттєвий обрив Wi-Fi.
+          // eslint-disable-next-line no-console
+          console.warn('[UserStateContext] фонове оновлення профілю не вдалось:', result.message)
+        } else {
+          setUserLoadError(result.message)
+        }
       }
       // 'no_init_data' — штатний стан поза Telegram, без помилки в UI.
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
       // Не мало б статись (loadUserProfile сама ловить помилки RPC), але
       // без цього catch будь-який неочікуваний виняток (напр. якщо сам
       // supabase-js кине щось до повернення {data, error}) лишав би
       // userLoadError порожнім і користувача — знову на вічному "Загрузка...".
-      setUserLoadError(err instanceof Error ? err.message : String(err))
+      if (hasLoadedOnceRef.current) {
+        // eslint-disable-next-line no-console
+        console.warn('[UserStateContext] фонове оновлення профілю не вдалось:', message)
+      } else {
+        setUserLoadError(message)
+      }
     } finally {
       setLoadingUser(false)
     }
@@ -143,6 +168,13 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     try {
       const list = await listUserMiners()
       setMiners(list)
+    } catch (err) {
+      // listUserMiners тепер кидає при реальній помилці (мережа тощо) —
+      // навмисно НЕ очищуємо miners тут: цей виклик тепер триггериться і
+      // періодичним фоновим опитуванням, де вже показаний на екрані список
+      // не повинен зникати через тимчасовий збій з'єднання.
+      // eslint-disable-next-line no-console
+      console.warn('[UserStateContext] refreshMiners не вдався:', err instanceof Error ? err.message : err)
     } finally {
       setLoadingMiners(false)
     }
@@ -159,6 +191,42 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       setCheckingSubscription(false)
     }
   }, [])
+
+  // Фонова синхронізація профілю/майнерів — без цього баланс/прогрес на
+  // екрані міг "розсинхронитись" із реальним сервером: усе, що зараховується
+  // НЕ клієнтським екшеном самого користувача (реферальний бонус від
+  // депозиту запрошеного, нагорода за 24г утримання підписки, вручну
+  // нарахований адміном депозит), ніколи не підтягувалось — сторінка
+  // просто ніколи не питала сервер знову, поки користувач сам не
+  // перезавантажить застосунок. Два джерела оновлення:
+  //  1) періодичний опитувальний інтервал, ЛИШЕ поки вкладка видима
+  //     (document.hidden — не марнуємо запити й батарею, поки Telegram
+  //     згорнутий у фон);
+  //  2) миттєве оновлення одразу, як тільки застосунок повертається з фону
+  //     (Telegram Mini App часто "заморожує" WebView при згортанні — після
+  //     повернення дані могли встигнути протухнути значно довше за
+  //     інтервал).
+  useEffect(() => {
+    const POLL_INTERVAL_MS = 25_000
+
+    function refreshIfVisible() {
+      if (document.hidden) return
+      void loadUser()
+      void refreshMiners()
+    }
+
+    const intervalId = setInterval(refreshIfVisible, POLL_INTERVAL_MS)
+
+    function handleVisibilityChange() {
+      if (!document.hidden) refreshIfVisible()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [loadUser, refreshMiners])
 
   const value = useMemo<UserStateContextValue>(
     () => ({
