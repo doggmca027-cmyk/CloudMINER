@@ -84,11 +84,6 @@ export default function TasksTab() {
             subscribed={subscription.channel}
             onOpen={() => openTelegramLink(REQUIRED_LINKS.channel)}
           />
-          <SubscriptionRow
-            label={t('mining.freeMiner.chat')}
-            subscribed={subscription.chat}
-            onOpen={() => openTelegramLink(REQUIRED_LINKS.chat)}
-          />
           {REQUIRED_LINKS.tx && (
             <SubscriptionRow
               label={t('mining.freeMiner.tx')}

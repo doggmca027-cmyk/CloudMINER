@@ -68,7 +68,7 @@
     "noTasks": "Henüz görev yok",
     "mandatoryTitle": "Zorunlu görevler",
     "mandatorySubtitle": "Ücretsiz madencinin çalışması için gereklidir",
-    "mandatoryWarning": "Kanal ve sohbete abone olmadan kazançlar dondurulur",
+    "mandatoryWarning": "Kanala abone olmadan kazançlar dondurulur",
     "subscribe": "Abone ol",
     "pending": "24s bekleniyor",
     "pendingNotice": "Abonelik onaylandı. Aboneliği iptal etmezseniz ödül 24 saat içinde otomatik olarak gelir."
@@ -159,9 +159,8 @@
       "active": "Aktif",
       "frozen": "Donduruldu",
       "channel": "Resmi kanal",
-      "chat": "Topluluk sohbeti",
       "tx": "İşlemler kanalı",
-      "subscribeToActivate": "Kazançları etkinleştirmek için kanala ve sohbete abone olun",
+      "subscribeToActivate": "Kazançları etkinleştirmek için kanala abone olun",
       "checkSubscription": "Aboneliği kontrol et",
       "checking": "Kontrol ediliyor..."
     },

@@ -10,9 +10,10 @@ interface FreeMinerCardProps {
 }
 
 /**
- * Гейт підписки для free-майнера: статус каналу/чату й кнопка перевірки.
- * Сам майнер відображається разом з рештою у спільному списку MiningTab
- * (через MinerCard) — тут лишається тільки те, що впливає на активність.
+ * Гейт підписки для free-майнера: статус каналу (+ каналу транзакцій,
+ * якщо налаштовано) і кнопка перевірки. Сам майнер відображається разом
+ * з рештою у спільному списку MiningTab (через MinerCard) — тут
+ * лишається тільки те, що впливає на активність.
  */
 export default function FreeMinerCard({
   subscription,
@@ -41,11 +42,6 @@ export default function FreeMinerCard({
           label={t('mining.freeMiner.channel')}
           subscribed={subscription.channel}
           onOpen={() => openTelegramLink(REQUIRED_LINKS.channel)}
-        />
-        <SubscriptionRow
-          label={t('mining.freeMiner.chat')}
-          subscribed={subscription.chat}
-          onOpen={() => openTelegramLink(REQUIRED_LINKS.chat)}
         />
         {REQUIRED_LINKS.tx && (
           <SubscriptionRow

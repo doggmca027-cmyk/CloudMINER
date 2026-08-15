@@ -4,10 +4,13 @@
 // раніше ця функція просто НЕ ІСНУВАЛА, і клієнт (src/lib/subscription.ts)
 // завжди падав у "безпечний" фолбек (false у проді). Викликається з
 // клієнта для ДВОХ типів цілей:
-//   - обов'язкові підписки (канал/чат/канал транзакцій) — гейт для
+//   - обов'язкові підписки (канал/канал транзакцій) — гейт для
 //     free-майнера в MiningTab;
 //   - партнерські/амбассадорські завдання з verification_type='subscription'
 //     у TasksTab.
+//
+// Обов'язкова підписка на чат проєкту прибрана (лишились лише канал і
+// канал транзакцій) — target 'mandatory:chat' більше не підтримується.
 //
 // ⚠️ Бот МУСИТЬ бути адміністратором у КОЖНОМУ каналі/чаті, який тут
 // перевіряється — інакше Telegram відмовляє в getChatMember. Це стосується
@@ -25,7 +28,6 @@
 //   TELEGRAM_TRANSACTIONS_CHANNEL_ID  — той самий, що й для сповіщень адміну;
 //                                        тут ще й слугує chat_ref для Bot API
 //   MANDATORY_CHANNEL_USERNAME        — опційно, дефолт "@cloudminer_channel"
-//   MANDATORY_CHAT_USERNAME           — опційно, дефолт "@cloudminer_chat"
 
 import { createSupabaseAdminClient } from '../_shared/supabaseAdmin.ts'
 import { checkChatMembership } from '../_shared/telegram.ts'
@@ -130,9 +132,6 @@ async function resolveTarget(
 ): Promise<ResolvedTarget> {
   if (targetKey === 'mandatory:channel') {
     return { chatRef: Deno.env.get('MANDATORY_CHANNEL_USERNAME') || '@cloudminer_channel', rewardUsd: MANDATORY_RETENTION_REWARD_USD }
-  }
-  if (targetKey === 'mandatory:chat') {
-    return { chatRef: Deno.env.get('MANDATORY_CHAT_USERNAME') || '@cloudminer_chat', rewardUsd: MANDATORY_RETENTION_REWARD_USD }
   }
   if (targetKey === 'mandatory:tx') {
     const chatRef = Deno.env.get('TELEGRAM_TRANSACTIONS_CHANNEL_ID')

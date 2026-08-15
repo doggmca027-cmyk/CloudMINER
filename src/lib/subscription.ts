@@ -4,21 +4,22 @@ import { getInitDataOrNull } from './telegram'
 /** Статус підписки на обов'язкові ресурси спільноти. */
 export interface SubscriptionStatus {
   channel: boolean
-  chat: boolean
-  /** Канал транзакцій — обов'язкова підписка нарівні з channel/chat. */
+  /** Канал транзакцій — обов'язкова підписка нарівні з channel. */
   tx: boolean
 }
 
 /**
- * Посилання на офіційний канал, чат і канал транзакцій, підписка на які
+ * Посилання на офіційний канал і канал транзакцій, підписка на які
  * активує free-майнер. `tx` — опційний `VITE_TRANSACTIONS_CHANNEL_LINK`
  * (порожньо, доки не налаштовано — той самий патерн, що й
  * VITE_DEPOSIT_ADDRESS_TON / VITE_SUPPORT_TELEGRAM_LINK: UI ховає
  * посилання, а не показує фейкове).
+ *
+ * Обов'язкова підписка на чат проєкту прибрана — free-майнер тепер
+ * розблоковується лише каналом (+ каналом транзакцій, якщо налаштовано).
  */
 export const REQUIRED_LINKS = {
   channel: 'https://t.me/cloudminer_channel',
-  chat: 'https://t.me/cloudminer_chat',
   tx: (import.meta.env.VITE_TRANSACTIONS_CHANNEL_LINK as string | undefined) || '',
 }
 
@@ -34,10 +35,10 @@ interface CheckSubscriptionResponse {
 /**
  * Перевіряє членство в одній конкретній цілі через Edge Function
  * `check-subscription` (РЕАЛЬНИЙ Telegram Bot API `getChatMember` —
- * `targetKey` ∈ {'mandatory:channel', 'mandatory:chat', 'mandatory:tx',
- * `task:<uuid>`}). При успіху сервер сам реєструє 24-годинну перевірку
- * утримання підписки (нагорода видається пізніше, окремою плановою
- * функцією, лише якщо користувач не відписався).
+ * `targetKey` ∈ {'mandatory:channel', 'mandatory:tx', `task:<uuid>`}).
+ * При успіху сервер сам реєструє 24-годинну перевірку утримання підписки
+ * (нагорода видається пізніше, окремою плановою функцією, лише якщо
+ * користувач не відписався).
  */
 async function checkTarget(targetKey: string): Promise<boolean> {
   const initData = getInitDataOrNull()
@@ -62,14 +63,13 @@ async function checkTarget(targetKey: string): Promise<boolean> {
   }
 }
 
-/** Перевіряє всі 3 обов'язкові підписки одразу (канал, чат, канал транзакцій). */
+/** Перевіряє обов'язкові підписки одразу (канал, канал транзакцій). */
 export async function checkSubscription(): Promise<SubscriptionStatus> {
-  const [channel, chat, tx] = await Promise.all([
+  const [channel, tx] = await Promise.all([
     checkTarget('mandatory:channel'),
-    checkTarget('mandatory:chat'),
     checkTarget('mandatory:tx'),
   ])
-  return { channel, chat, tx }
+  return { channel, tx }
 }
 
 /**
@@ -79,7 +79,7 @@ export async function checkSubscription(): Promise<SubscriptionStatus> {
  * нема куди підписатись, тож блокувати free-майнер цією вимогою не варто.
  */
 export function isFullySubscribed(status: SubscriptionStatus): boolean {
-  return status.channel && status.chat && (status.tx || !REQUIRED_LINKS.tx)
+  return status.channel && (status.tx || !REQUIRED_LINKS.tx)
 }
 
 /** Dev-заглушка: імітує підписку локально, поки не розгорнуто Edge Function. */

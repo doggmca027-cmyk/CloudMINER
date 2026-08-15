@@ -91,7 +91,6 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
   const [loadingMiners, setLoadingMiners] = useState(false)
   const [subscription, setSubscription] = useState<SubscriptionStatus>({
     channel: false,
-    chat: false,
     tx: false,
   })
   const [checkingSubscription, setCheckingSubscription] = useState(false)
@@ -137,7 +136,7 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     try {
       const status = await checkSubscription()
       setSubscription(status)
-      haptic.notification(status.channel && status.chat && status.tx ? 'success' : 'warning')
+      haptic.notification(status.channel && status.tx ? 'success' : 'warning')
     } finally {
       setCheckingSubscription(false)
     }
