@@ -54,7 +54,9 @@
       "confirming": "Comprando...",
       "cancel": "Cancelar",
       "success": "¡Minero comprado con éxito!",
-      "purchaseFailed": "No se pudo comprar el minero. Inténtalo de nuevo."
+      "purchaseFailed": "No se pudo comprar el minero. Inténtalo de nuevo.",
+      "priceBeforeDiscount": "Precio sin descuento",
+      "discountLabel": "Precio con {{percent}}% de descuento"
     }
   },
   "tasks": {
@@ -141,7 +143,9 @@
     "intentError": "No se pudo generar el monto. Inténtalo más tarde.",
     "withdrawalUnlocked": "🟢 Retiro desbloqueado",
     "withdrawalLocked": "🔴 Retiro bloqueado: se requiere un depósito mínimo de {{amount}} USDT",
-    "withdrawalLockedMessage": "Retiro no disponible. Para desbloquear los retiros, debes realizar un depósito mínimo ({{amount}} USDT)."
+    "withdrawalLockedMessage": "Retiro no disponible. Para desbloquear los retiros, debes realizar un depósito mínimo ({{amount}} USDT).",
+    "depositBonusBadge": "🎁 Bono de +{{percent}}% al depositar",
+    "depositBonusExample": "Acreditado adicional: +{{bonus}} USDT"
   },
   "profile": {
     "title": "Perfil",
@@ -184,7 +188,8 @@
       "deposits": "Depósitos",
       "withdrawals": "Retiros",
       "tasks": "Tareas",
-      "broadcast": "Difusión"
+      "broadcast": "Difusión",
+      "settings": "Descuentos"
     },
     "ambassadors": {
       "assignTitle": "Asignar embajador",
@@ -253,6 +258,19 @@
       "confirmSend": "Sí, enviar",
       "success": "Difusión en cola para {{count}} jugadores"
     },
+    "settings": {
+      "discountTitle": "Descuento en mineros",
+      "discountHint": "Reduce el monto cobrado al comprar en la tienda — sobre el PRECIO del paquete. El minero igual entrega el rendimiento completo del paquete.",
+      "bonusTitle": "Bono de depósito",
+      "bonusHint": "Se acredita además del depósito real — sobre el MONTO del depósito. No aplica a las acreditaciones manuales del administrador.",
+      "percentLabel": "Porcentaje",
+      "invalidPercent": "Introduce un número de 0 a 100",
+      "discountExample": "Ejemplo: {{before}} USDT → {{after}} USDT",
+      "bonusExample": "Ejemplo: depósito de {{amount}} USDT → bono de +{{bonus}} USDT",
+      "save": "Guardar",
+      "saving": "Guardando...",
+      "success": "Configuración guardada"
+    },
     "errors": {
       "not_admin": "Permisos de administrador insuficientes",
       "user_not_found": "No se encontró ningún usuario con este ID de Telegram — primero debe abrir la aplicación al menos una vez",
@@ -265,6 +283,8 @@
       "invalid_verification_type": "Tipo de verificación inválido",
       "task_not_found": "Tarea no encontrada",
       "text_required": "Ingresa el texto del mensaje",
+      "invalid_discount_percent": "El porcentaje de descuento debe estar entre 0 y 100",
+      "invalid_bonus_percent": "El porcentaje de bono debe estar entre 0 y 100",
       "generic": "No se pudo completar la acción"
     }
   }

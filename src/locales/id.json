@@ -54,7 +54,9 @@
       "confirming": "Memproses pembelian...",
       "cancel": "Batal",
       "success": "Miner berhasil dibeli!",
-      "purchaseFailed": "Gagal membeli miner. Silakan coba lagi."
+      "purchaseFailed": "Gagal membeli miner. Silakan coba lagi.",
+      "priceBeforeDiscount": "Harga tanpa diskon",
+      "discountLabel": "Harga dengan diskon {{percent}}%"
     }
   },
   "tasks": {
@@ -141,7 +143,9 @@
     "intentError": "Gagal membuat jumlah. Coba lagi nanti.",
     "withdrawalUnlocked": "🟢 Penarikan terbuka",
     "withdrawalLocked": "🔴 Penarikan terkunci: diperlukan deposit minimum {{amount}} USDT",
-    "withdrawalLockedMessage": "Penarikan tidak tersedia. Untuk membuka penarikan, Anda perlu melakukan deposit minimum ({{amount}} USDT)."
+    "withdrawalLockedMessage": "Penarikan tidak tersedia. Untuk membuka penarikan, Anda perlu melakukan deposit minimum ({{amount}} USDT).",
+    "depositBonusBadge": "🎁 Bonus +{{percent}}% untuk deposit",
+    "depositBonusExample": "Kredit tambahan: +{{bonus}} USDT"
   },
   "profile": {
     "title": "Profil",
@@ -184,7 +188,8 @@
       "deposits": "Deposit",
       "withdrawals": "Penarikan",
       "tasks": "Misi",
-      "broadcast": "Siaran"
+      "broadcast": "Siaran",
+      "settings": "Diskon"
     },
     "ambassadors": {
       "assignTitle": "Tetapkan ambassador",
@@ -253,6 +258,19 @@
       "confirmSend": "Ya, kirim",
       "success": "Siaran masuk antrean untuk {{count}} pemain"
     },
+    "settings": {
+      "discountTitle": "Diskon miner",
+      "discountHint": "Mengurangi jumlah yang dibebankan saat membeli di toko — dari HARGA paket. Miner tetap memberikan hasil penuh paket.",
+      "bonusTitle": "Bonus deposit",
+      "bonusHint": "Dikreditkan tambahan di atas deposit asli — dari JUMLAH deposit. Tidak berlaku untuk kredit manual admin.",
+      "percentLabel": "Persentase",
+      "invalidPercent": "Masukkan angka dari 0 sampai 100",
+      "discountExample": "Contoh: {{before}} USDT → {{after}} USDT",
+      "bonusExample": "Contoh: deposit {{amount}} USDT → bonus +{{bonus}} USDT",
+      "save": "Simpan",
+      "saving": "Menyimpan...",
+      "success": "Pengaturan disimpan"
+    },
     "errors": {
       "not_admin": "Hak akses admin tidak mencukupi",
       "user_not_found": "Pengguna dengan Telegram ID ini tidak ditemukan — mereka harus membuka aplikasi setidaknya sekali terlebih dahulu",
@@ -265,6 +283,8 @@
       "invalid_verification_type": "Jenis verifikasi tidak valid",
       "task_not_found": "Misi tidak ditemukan",
       "text_required": "Masukkan teks pesan",
+      "invalid_discount_percent": "Persentase diskon harus antara 0 dan 100",
+      "invalid_bonus_percent": "Persentase bonus harus antara 0 dan 100",
       "generic": "Gagal menyelesaikan tindakan"
     }
   }

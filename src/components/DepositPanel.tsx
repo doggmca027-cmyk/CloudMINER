@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react'
 import { useTonPrice } from '../lib/tonPrice'
+import { getAppSettings, calcDepositBonus } from '../lib/appSettings'
 import { haptic } from '../lib/telegram'
 import {
   MIN_DEPOSIT_USD,
@@ -44,6 +45,20 @@ export default function DepositPanel() {
   const [intentStatus, setIntentStatus] = useState<IntentStatus>('idle')
   const [exactAmountUsd, setExactAmountUsd] = useState<number | null>(null)
   const [intentError, setIntentError] = useState<string | null>(null)
+  // Бонус — глобальний, з адмінки (0, якщо вимкнений/не налаштований).
+  // Сервер (credit_deposit) все одно рахує й нараховує його незалежно —
+  // це лише відображення в UI, не джерело правди.
+  const [bonusPercent, setBonusPercent] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void getAppSettings().then((settings) => {
+      if (!cancelled && settings.depositBonusEnabled) setBonusPercent(settings.depositBonusPercent)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const telegramId = getDepositMemoTelegramId()
   const usdtAmountNumber = Number(usdtAmount)
@@ -185,6 +200,21 @@ export default function DepositPanel() {
               className="mt-1 w-full rounded-lg border border-cyan-500/20 bg-slate-800/60 px-2.5 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500/50"
             />
           </label>
+        )}
+
+        {bonusPercent > 0 && (
+          <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
+            <p className="text-xs font-semibold text-emerald-400">
+              {t('wallet.depositBonusBadge', { percent: bonusPercent })}
+            </p>
+            {Number.isFinite(usdtAmountNumber) && usdtAmountNumber >= MIN_DEPOSIT_USD && (
+              <p className="mt-0.5 text-[11px] text-emerald-400/80">
+                {t('wallet.depositBonusExample', {
+                  bonus: calcDepositBonus(usdtAmountNumber, bonusPercent).toFixed(2),
+                })}
+              </p>
+            )}
+          </div>
         )}
 
         <p className="mt-2 text-[11px] text-slate-500">

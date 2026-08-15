@@ -54,7 +54,9 @@
       "confirming": "Satın alınıyor...",
       "cancel": "İptal",
       "success": "Madenci başarıyla satın alındı!",
-      "purchaseFailed": "Madenci satın alınamadı. Lütfen tekrar deneyin."
+      "purchaseFailed": "Madenci satın alınamadı. Lütfen tekrar deneyin.",
+      "priceBeforeDiscount": "İndirimsiz fiyat",
+      "discountLabel": "%{{percent}} indirimli fiyat"
     }
   },
   "tasks": {
@@ -141,7 +143,9 @@
     "intentError": "Tutar oluşturulamadı. Lütfen daha sonra tekrar deneyin.",
     "withdrawalUnlocked": "🟢 Para çekme açık",
     "withdrawalLocked": "🔴 Para çekme kilitli: minimum {{amount}} USDT yatırım gerekli",
-    "withdrawalLockedMessage": "Para çekme kullanılamıyor. Para çekmeyi açmak için minimum bir yatırım ({{amount}} USDT) yapmanız gerekir."
+    "withdrawalLockedMessage": "Para çekme kullanılamıyor. Para çekmeyi açmak için minimum bir yatırım ({{amount}} USDT) yapmanız gerekir.",
+    "depositBonusBadge": "🎁 Yatırıma %{{percent}} bonus",
+    "depositBonusExample": "Ek olarak eklenecek: +{{bonus}} USDT"
   },
   "profile": {
     "title": "Profil",
@@ -184,7 +188,8 @@
       "deposits": "Yatırımlar",
       "withdrawals": "Çekimler",
       "tasks": "Görevler",
-      "broadcast": "Duyuru"
+      "broadcast": "Duyuru",
+      "settings": "İndirimler"
     },
     "ambassadors": {
       "assignTitle": "Elçi ata",
@@ -253,6 +258,19 @@
       "confirmSend": "Evet, gönder",
       "success": "Duyuru {{count}} oyuncu için kuyruğa alındı"
     },
+    "settings": {
+      "discountTitle": "Madenci indirimi",
+      "discountHint": "Mağazadan satın alırken tahsil edilen tutarı azaltır — paketin FİYATINDAN. Madenci yine de paketin tam getirisini sağlar.",
+      "bonusTitle": "Yatırım bonusu",
+      "bonusHint": "Gerçek yatırıma ek olarak eklenir — yatırım TUTARINDAN. Manuel yönetici bakiye eklemelerine uygulanmaz.",
+      "percentLabel": "Yüzde",
+      "invalidPercent": "0 ile 100 arasında bir sayı girin",
+      "discountExample": "Örnek: {{before}} USDT → {{after}} USDT",
+      "bonusExample": "Örnek: {{amount}} USDT yatırım → +{{bonus}} USDT bonus",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "success": "Ayarlar kaydedildi"
+    },
     "errors": {
       "not_admin": "Yönetici yetkisi yetersiz",
       "user_not_found": "Bu Telegram ID'ye sahip kullanıcı bulunamadı — önce uygulamayı en az bir kez açmalı",
@@ -265,6 +283,8 @@
       "invalid_verification_type": "Geçersiz doğrulama türü",
       "task_not_found": "Görev bulunamadı",
       "text_required": "Lütfen mesaj metnini girin",
+      "invalid_discount_percent": "İndirim yüzdesi 0 ile 100 arasında olmalı",
+      "invalid_bonus_percent": "Bonus yüzdesi 0 ile 100 arasında olmalı",
       "generic": "İşlem tamamlanamadı"
     }
   }

@@ -54,7 +54,9 @@
       "confirming": "Purchasing...",
       "cancel": "Cancel",
       "success": "Miner purchased successfully!",
-      "purchaseFailed": "Couldn't purchase the miner. Please try again."
+      "purchaseFailed": "Couldn't purchase the miner. Please try again.",
+      "priceBeforeDiscount": "Price without discount",
+      "discountLabel": "Price with {{percent}}% discount"
     }
   },
   "tasks": {
@@ -141,7 +143,9 @@
     "intentError": "Failed to generate the amount. Please try again later.",
     "withdrawalUnlocked": "🟢 Withdrawal unlocked",
     "withdrawalLocked": "🔴 Withdrawal locked: minimum deposit of {{amount}} USDT required",
-    "withdrawalLockedMessage": "Withdrawal unavailable. To unlock withdrawals, you need to make a minimum deposit ({{amount}} USDT)."
+    "withdrawalLockedMessage": "Withdrawal unavailable. To unlock withdrawals, you need to make a minimum deposit ({{amount}} USDT).",
+    "depositBonusBadge": "🎁 +{{percent}}% deposit bonus",
+    "depositBonusExample": "Extra credited: +{{bonus}} USDT"
   },
   "profile": {
     "title": "Profile",
@@ -184,7 +188,8 @@
       "deposits": "Deposits",
       "withdrawals": "Withdrawals",
       "tasks": "Tasks",
-      "broadcast": "Broadcast"
+      "broadcast": "Broadcast",
+      "settings": "Discounts"
     },
     "ambassadors": {
       "assignTitle": "Assign an ambassador",
@@ -253,6 +258,19 @@
       "confirmSend": "Yes, send it",
       "success": "Broadcast queued for {{count}} players"
     },
+    "settings": {
+      "discountTitle": "Miner discount",
+      "discountHint": "Reduces the charged amount when purchasing in the shop — off the pack's PRICE. The miner still yields the pack's full return.",
+      "bonusTitle": "Deposit bonus",
+      "bonusHint": "Credited on top of the real deposit — off the deposit AMOUNT. Does not apply to manual admin credits.",
+      "percentLabel": "Percent",
+      "invalidPercent": "Enter a number from 0 to 100",
+      "discountExample": "Example: {{before}} USDT → {{after}} USDT",
+      "bonusExample": "Example: {{amount}} USDT deposit → +{{bonus}} USDT bonus",
+      "save": "Save",
+      "saving": "Saving...",
+      "success": "Settings saved"
+    },
     "errors": {
       "not_admin": "Insufficient admin rights",
       "user_not_found": "No user with this Telegram ID found — they must open the app at least once first",
@@ -265,6 +283,8 @@
       "invalid_verification_type": "Invalid verification type",
       "task_not_found": "Task not found",
       "text_required": "Please enter the message text",
+      "invalid_discount_percent": "Discount percent must be between 0 and 100",
+      "invalid_bonus_percent": "Bonus percent must be between 0 and 100",
       "generic": "Failed to complete the action"
     }
   }

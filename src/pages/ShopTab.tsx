@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { MinerTemplate } from '../types'
 import { REGULAR_PACKS, PREMIUM_PACKS } from '../lib/catalog'
+import { getAppSettings } from '../lib/appSettings'
 import { useUserState } from '../context/UserStateContext'
 import { haptic } from '../lib/telegram'
 import PackCard from '../components/PackCard'
@@ -14,6 +15,20 @@ export default function ShopTab() {
   const { balanceUsd, purchaseMiner } = useUserState()
   const [category, setCategory] = useState<Category>('regular')
   const [selectedPack, setSelectedPack] = useState<MinerTemplate | null>(null)
+  // Знижка — глобальна, з адмінки (0, якщо вимкнена/не налаштована).
+  // Сервер (purchase_miner) все одно рахує й перевіряє її незалежно —
+  // це лише відображення в UI, не джерело правди для суми списання.
+  const [discountPercent, setDiscountPercent] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void getAppSettings().then((settings) => {
+      if (!cancelled && settings.shopDiscountEnabled) setDiscountPercent(settings.shopDiscountPercent)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const packs = category === 'regular' ? REGULAR_PACKS : PREMIUM_PACKS
 
@@ -47,13 +62,19 @@ export default function ShopTab() {
 
       <div className="grid grid-cols-2 gap-3">
         {packs.map((pack) => (
-          <PackCard key={pack.id} template={pack} onBuy={() => setSelectedPack(pack)} />
+          <PackCard
+            key={pack.id}
+            template={pack}
+            discountPercent={discountPercent}
+            onBuy={() => setSelectedPack(pack)}
+          />
         ))}
       </div>
 
       {selectedPack && (
         <PurchaseModal
           template={selectedPack}
+          discountPercent={discountPercent}
           balanceUsd={balanceUsd}
           onClose={() => setSelectedPack(null)}
           onConfirmBalance={() => purchaseMiner(selectedPack)}

@@ -192,6 +192,21 @@ export interface PendingWithdrawal {
   userTotalDepositedUsd: number
 }
 
+/**
+ * Глобальні промо-налаштування (адмінка → "Скидки/Бонусы"): відсоток
+ * знижки на покупку майнерів і відсоток бонусу до поповнення. Обидва —
+ * незалежні прапорці enabled + окреме значення percent (0..100), щоб
+ * можна було тимчасово вимкнути акцію, не втрачаючи налаштоване число.
+ */
+export interface AppSettings {
+  shopDiscountEnabled: boolean
+  /** Відсоток знижки від ціни пакета (0..100). */
+  shopDiscountPercent: number
+  depositBonusEnabled: boolean
+  /** Відсоток бонусу від суми поповнення (0..100). */
+  depositBonusPercent: number
+}
+
 /** Завдання в адмін-списку управління завданнями. */
 export interface AdminTask {
   id: string

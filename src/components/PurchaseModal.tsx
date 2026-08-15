@@ -3,10 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import type { MinerTemplate } from '../types'
 import { getCapUsd } from '../lib/mining'
+import { applyDiscount } from '../lib/appSettings'
 import { haptic } from '../lib/telegram'
 
 interface PurchaseModalProps {
   template: MinerTemplate
+  /** Глобальна знижка з адмінки, % (0 — вимкнена/не налаштована). */
+  discountPercent: number
   balanceUsd: number
   onClose: () => void
   /** Списує вартість паку з балансу й створює майнер на сервері; повертає успіх операції. */
@@ -23,6 +26,7 @@ interface PurchaseModalProps {
  */
 export default function PurchaseModal({
   template,
+  discountPercent,
   balanceUsd,
   onClose,
   onConfirmBalance,
@@ -39,7 +43,11 @@ export default function PurchaseModal({
   const [submitting, setSubmitting] = useState(false)
 
   const capUsd = getCapUsd(template)
-  const insufficient = balanceUsd < template.depositUsd
+  const hasDiscount = discountPercent > 0
+  // Лише прев'ю — реальну суму списання (і саму знижку) рахує й перевіряє
+  // сервер (purchase_miner), не довіряючи цьому клієнтському числу.
+  const chargeAmountUsd = hasDiscount ? applyDiscount(template.depositUsd, discountPercent) : template.depositUsd
+  const insufficient = balanceUsd < chargeAmountUsd
 
   async function handleConfirmBalance() {
     if (submitting) return
@@ -87,7 +95,18 @@ export default function PurchaseModal({
 
       <div className="mt-3 space-y-1.5 rounded-xl bg-slate-800/60 p-3 text-sm">
         <Row label={t('shop.modal.pack')} value={template.name} />
-        <Row label={t('shop.modal.amount')} value={`${template.depositUsd.toFixed(2)} USDT`} />
+        {hasDiscount ? (
+          <>
+            <Row label={t('shop.modal.priceBeforeDiscount')} value={`${template.depositUsd.toFixed(2)} USDT`} strike />
+            <Row
+              label={t('shop.modal.discountLabel', { percent: discountPercent })}
+              value={`${chargeAmountUsd.toFixed(2)} USDT`}
+              highlight
+            />
+          </>
+        ) : (
+          <Row label={t('shop.modal.amount')} value={`${chargeAmountUsd.toFixed(2)} USDT`} />
+        )}
         <Row label={t('shop.modal.return')} value={`${capUsd.toFixed(2)} USDT`} />
         <Row label={t('shop.modal.duration')} value={`${template.durationDays} ${t('shop.days')}`} />
       </div>
@@ -131,11 +150,33 @@ export default function PurchaseModal({
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  strike,
+  highlight,
+}: {
+  label: string
+  value: string
+  /** Закреслене значення — стара ціна до знижки. */
+  strike?: boolean
+  /** Виділене значення — фінальна сума зі знижкою. */
+  highlight?: boolean
+}) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-slate-400">{label}</span>
-      <span className="font-medium text-slate-200">{value}</span>
+      <span
+        className={
+          strike
+            ? 'font-medium text-slate-500 line-through'
+            : highlight
+              ? 'font-semibold text-emerald-400'
+              : 'font-medium text-slate-200'
+        }
+      >
+        {value}
+      </span>
     </div>
   )
 }

@@ -54,7 +54,9 @@
       "confirming": "جارٍ الشراء...",
       "cancel": "إلغاء",
       "success": "تم شراء المعدّن بنجاح!",
-      "purchaseFailed": "تعذر شراء المعدّن. حاول مرة أخرى."
+      "purchaseFailed": "تعذر شراء المعدّن. حاول مرة أخرى.",
+      "priceBeforeDiscount": "السعر بدون خصم",
+      "discountLabel": "السعر بخصم {{percent}}%"
     }
   },
   "tasks": {
@@ -141,7 +143,9 @@
     "intentError": "فشل توليد المبلغ. حاول مرة أخرى لاحقًا.",
     "withdrawalUnlocked": "🟢 السحب مفعّل",
     "withdrawalLocked": "🔴 السحب مقفل: يلزم إيداع بحد أدنى {{amount}} USDT",
-    "withdrawalLockedMessage": "السحب غير متاح. لإلغاء قفل السحب، يجب إجراء حد أدنى للإيداع ({{amount}} USDT)."
+    "withdrawalLockedMessage": "السحب غير متاح. لإلغاء قفل السحب، يجب إجراء حد أدنى للإيداع ({{amount}} USDT).",
+    "depositBonusBadge": "🎁 مكافأة +{{percent}}% على الإيداع",
+    "depositBonusExample": "إضافي سيُضاف: +{{bonus}} USDT"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -184,7 +188,8 @@
       "deposits": "الإيداعات",
       "withdrawals": "السحوبات",
       "tasks": "المهام",
-      "broadcast": "الرسائل الجماعية"
+      "broadcast": "الرسائل الجماعية",
+      "settings": "الخصومات"
     },
     "ambassadors": {
       "assignTitle": "تعيين سفير",
@@ -253,6 +258,19 @@
       "confirmSend": "نعم، أرسل",
       "success": "تم وضع الرسالة في قائمة الانتظار لـ {{count}} لاعب"
     },
+    "settings": {
+      "discountTitle": "خصم على الماكينات",
+      "discountHint": "يقلل المبلغ المخصوم عند الشراء من المتجر — من سعر الباقة. الماكينة تمنح المردود الكامل للباقة رغم ذلك.",
+      "bonusTitle": "مكافأة الإيداع",
+      "bonusHint": "تُضاف إضافةً إلى الإيداع الحقيقي — من مبلغ الإيداع. لا تُطبَّق على الإضافات اليدوية من المسؤول.",
+      "percentLabel": "النسبة المئوية",
+      "invalidPercent": "أدخل رقمًا من 0 إلى 100",
+      "discountExample": "مثال: {{before}} USDT → {{after}} USDT",
+      "bonusExample": "مثال: إيداع {{amount}} USDT ← مكافأة +{{bonus}} USDT",
+      "save": "حفظ",
+      "saving": "جارٍ الحفظ...",
+      "success": "تم حفظ الإعدادات"
+    },
     "errors": {
       "not_admin": "صلاحيات المسؤول غير كافية",
       "user_not_found": "لم يتم العثور على مستخدم بهذا المعرف — يجب أن يفتح التطبيق مرة واحدة على الأقل أولاً",
@@ -265,6 +283,8 @@
       "invalid_verification_type": "نوع تحقق غير صحيح",
       "task_not_found": "المهمة غير موجودة",
       "text_required": "الرجاء إدخال نص الرسالة",
+      "invalid_discount_percent": "يجب أن تكون نسبة الخصم بين 0 و100",
+      "invalid_bonus_percent": "يجب أن تكون نسبة المكافأة بين 0 و100",
       "generic": "فشل تنفيذ الإجراء"
     }
   }

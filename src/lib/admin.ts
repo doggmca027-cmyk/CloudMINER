@@ -4,6 +4,7 @@ import type {
   AdminCreditType,
   AdminTask,
   AmbassadorStats,
+  AppSettings,
   PendingWithdrawal,
   TaskVerificationType,
   TransactionNetwork,
@@ -236,6 +237,46 @@ export async function deleteAdminTask(taskId: string): Promise<void> {
     p_task_id: taskId,
   })
   if (error) throw new Error(error.message)
+}
+
+// ---------------------------------------------------------------------------
+// Скидки/бонусы (глобальні промо-налаштування)
+// ---------------------------------------------------------------------------
+
+interface AppSettingsRow {
+  shop_discount_enabled: boolean
+  shop_discount_percent: number | string
+  deposit_bonus_enabled: boolean
+  deposit_bonus_percent: number | string
+}
+
+function mapAppSettingsRow(row: AppSettingsRow): AppSettings {
+  return {
+    shopDiscountEnabled: row.shop_discount_enabled,
+    shopDiscountPercent: Number(row.shop_discount_percent),
+    depositBonusEnabled: row.deposit_bonus_enabled,
+    depositBonusPercent: Number(row.deposit_bonus_percent),
+  }
+}
+
+/**
+ * Оновлює обидва промо-налаштування одразу (RPC `admin_update_settings`,
+ * SECURITY DEFINER) — сервер сам валідує 0..100 і рахує знижку/бонус
+ * "від суми/ціни" у purchase_miner/credit_deposit; це лише
+ * читання/запис самого відсотка.
+ */
+export async function updateAppSettings(next: AppSettings): Promise<AppSettings> {
+  const { data, error } = await supabase.rpc('admin_update_settings', {
+    p_admin_init_data: requireAdminInitData(),
+    p_shop_discount_enabled: next.shopDiscountEnabled,
+    p_shop_discount_percent: next.shopDiscountPercent,
+    p_deposit_bonus_enabled: next.depositBonusEnabled,
+    p_deposit_bonus_percent: next.depositBonusPercent,
+  })
+  if (error) throw new Error(error.message)
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) throw new Error('empty_response')
+  return mapAppSettingsRow(row as AppSettingsRow)
 }
 
 // ---------------------------------------------------------------------------
