@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUserState } from '../context/UserStateContext'
-import { isFullySubscribed, REQUIRED_LINKS, verifyTaskSubscription } from '../lib/subscription'
+import { verifyTaskSubscription } from '../lib/subscription'
 import { haptic, openTelegramLink } from '../lib/telegram'
 import { fetchUserTasks, PARTNER_TASKS } from '../lib/tasksCatalog'
 import type { Task } from '../types'
-import SubscriptionRow from '../components/SubscriptionRow'
 import TaskCard from '../components/TaskCard'
 
 export default function TasksTab() {
   const { t } = useTranslation()
-  const { subscription, checkingSubscription, refreshSubscription, claimTaskReward } = useUserState()
+  const { claimTaskReward } = useUserState()
 
   const [verifyingTaskId, setVerifyingTaskId] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>(PARTNER_TASKS)
@@ -29,8 +28,6 @@ export default function TasksTab() {
       cancelled = true
     }
   }, [])
-
-  const subscribed = isFullySubscribed(subscription)
 
   /**
    * 'click'-завдання — миттєва нагорода (claim_task_reward), як і раніше.
@@ -73,38 +70,6 @@ export default function TasksTab() {
 
   return (
     <div className="space-y-4">
-      {/* Обов'язкові завдання — без них free-майнер не нараховує дохід (MiningTab). */}
-      <section className="glass-card p-4">
-        <p className="text-sm font-semibold text-slate-200">{t('tasks.mandatoryTitle')}</p>
-        <p className="mt-1 text-xs text-slate-400">{t('tasks.mandatorySubtitle')}</p>
-
-        <div className="mt-3 space-y-1.5">
-          <SubscriptionRow
-            label={t('mining.freeMiner.channel')}
-            subscribed={subscription.channel}
-            onOpen={() => openTelegramLink(REQUIRED_LINKS.channel)}
-          />
-          {REQUIRED_LINKS.tx && (
-            <SubscriptionRow
-              label={t('mining.freeMiner.tx')}
-              subscribed={subscription.tx}
-              onOpen={() => openTelegramLink(REQUIRED_LINKS.tx)}
-            />
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={refreshSubscription}
-          disabled={checkingSubscription}
-          className="mt-3 w-full rounded-xl border border-cyan-500/30 py-2 text-sm font-medium text-neon-glow transition-opacity disabled:opacity-50"
-        >
-          {checkingSubscription ? t('mining.freeMiner.checking') : t('tasks.check')}
-        </button>
-
-        {!subscribed && <p className="mt-2 text-[11px] text-amber-400">{t('tasks.mandatoryWarning')}</p>}
-      </section>
-
       {/* Завдання від амбасадорів/партнерів — разова винагорода за підписку. */}
       <section>
         <h2 className="mb-2 px-1 text-sm font-semibold text-slate-300">{t('tasks.partners')}</h2>

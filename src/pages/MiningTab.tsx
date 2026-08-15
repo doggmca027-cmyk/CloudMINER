@@ -1,26 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getRatePerSecond, getUnclaimedUsd, isMinerCompleted } from '../lib/mining'
-import { ensureFreeMinerRpc, setFreeMinerActiveRpc } from '../lib/minersApi'
+import { ensureFreeMinerRpc } from '../lib/minersApi'
 import { haptic } from '../lib/telegram'
-import { isFullySubscribed } from '../lib/subscription'
 import { useUserState } from '../context/UserStateContext'
-import FreeMinerCard from '../components/FreeMinerCard'
 import MinerCard from '../components/MinerCard'
 import MiningOrb from '../components/MiningOrb'
 import TokenIcon from '../components/TokenIcon'
 
 export default function MiningTab() {
   const { t } = useTranslation()
-  const {
-    balanceUsd,
-    miners: allMiners,
-    refreshMiners,
-    claimMinerIncome,
-    subscription,
-    checkingSubscription,
-    refreshSubscription,
-  } = useUserState()
+  const { balanceUsd, miners: allMiners, refreshMiners, claimMinerIncome } = useUserState()
 
   // Тікає кожні 100мс — від нього перераховуються всі "живі" суми на екрані.
   const [now, setNow] = useState(() => Date.now())
@@ -33,42 +23,20 @@ export default function MiningTab() {
   // бив "success", а баланс не змінювався, без жодного пояснення чому.
   const [claimError, setClaimError] = useState<string | null>(null)
 
-  const subscribed = isFullySubscribed(subscription)
-
   useEffect(() => {
     const intervalId = setInterval(() => setNow(Date.now()), 100)
     return () => clearInterval(intervalId)
   }, [])
 
-  // Free-майнер тепер РЕАЛЬНИЙ персистентний рядок user_miners (is_free),
-  // а не React-стан, що скидався до нуля при кожному розмонтуванні
-  // MiningTab (вихід на іншу вкладку й назад) — раніше це давало
-  // необмежене поновлення капу free-майнера. ensure_free_miner — idempotent
-  // (unique-індекс не дає створити другий), тож тут просто гарантуємо, що
-  // рядок існує, і перечитуємо повний список.
+  // Free-майнер — РЕАЛЬНИЙ персистентний рядок user_miners (is_free),
+  // один на юзера назавжди. ensure_free_miner — idempotent (unique-індекс
+  // не дає створити другий) і створює його одразу АКТИВНИМ (обов'язкову
+  // підписку на канал/канал транзакцій прибрано за прямим запитом — тут
+  // просто гарантуємо, що рядок існує, і перечитуємо повний список).
   useEffect(() => {
     void ensureFreeMinerRpc().then(() => refreshMiners())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Заморожує/розморожує free-майнер услід за статусом підписки — тепер
-  // теж на сервері (set_free_miner_active), не в локальному стані.
-  //
-  // ⚠️ РАНІШЕ тут був "пропустити перший рендер" (`didMount`-реф), щоб не
-  // бити зайвий запит одразу при вході — і це був реальний баг: якщо
-  // користувач підтверджував підписку НЕ з цієї вкладки (напр. з
-  // "Задания" — та сама кнопка перевірки на тому самому спільному
-  // `subscription` з контексту), а тоді ВПЕРШЕ за сесію заходив на
-  // "Майнинг", компонент монтувався одразу з subscribed=true, і той
-  // перший (єдиний потрібний!) виклик мовчки пропускався — free-майнер
-  // ніколи не активувався. set_free_miner_active сам по собі
-  // ідемпотентний (повторний виклик із тим самим p_active — no-op),
-  // тож жодної спеціальної обробки першого рендера тут насправді не
-  // потрібно було.
-  useEffect(() => {
-    void setFreeMinerActiveRpc(subscribed).then(() => refreshMiners())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subscribed])
 
   const totalUnclaimedUsd = allMiners.reduce((sum, miner) => sum + getUnclaimedUsd(miner, now), 0)
   const liveBalanceUsd = balanceUsd + totalUnclaimedUsd
@@ -158,12 +126,6 @@ export default function MiningTab() {
           )}
         </div>
       </section>
-
-      <FreeMinerCard
-        subscription={subscription}
-        checking={checkingSubscription}
-        onCheckSubscription={refreshSubscription}
-      />
 
       <section>
         <h2 className="mb-2 px-1 text-sm font-semibold text-slate-300">

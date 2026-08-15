@@ -11,8 +11,6 @@ import {
 import type { MinerTemplate, User, UserMiner } from '../types'
 import { claimMinerIncomeRpc, listUserMiners, purchaseMinerRpc } from '../lib/minersApi'
 import { claimTaskRewardRpc } from '../lib/tasksCatalog'
-import { checkSubscription, type SubscriptionStatus } from '../lib/subscription'
-import { haptic } from '../lib/telegram'
 import { loadUserProfile } from '../lib/userProfile'
 
 export interface ActionResult {
@@ -62,11 +60,6 @@ interface UserStateContextValue {
   claimMinerIncome: (minerId: string) => Promise<ActionResult & { claimedUsd?: number }>
   /** Списує довільну суму з балансу (напр. після заявки на вивід). Повертає `false`, якщо коштів недостатньо. */
   spendBalance: (amount: number) => boolean
-  /** Статус підписки на офіційний канал/чат (гейт для free-майнера, TasksTab). */
-  subscription: SubscriptionStatus
-  checkingSubscription: boolean
-  /** Перевіряє підписку заново й оновлює `subscription`. Спільна для MiningTab і TasksTab. */
-  refreshSubscription: () => Promise<void>
   /**
    * Зараховує винагороду за завдання — RPC `claim_task_reward` гарантує
    * (унікальний ключ у `user_tasks`), що та сама нагорода не видасться
@@ -78,18 +71,14 @@ interface UserStateContextValue {
 const UserStateContext = createContext<UserStateContextValue | null>(null)
 
 /**
- * ⚠️ Free-майнер (виданий за підписку на офіційний канал/чат/канал
- * транзакцій, не за депозит) і далі живе ЛИШЕ в пам'яті MiningTab, не в
- * цій таблиці — навмисне архітектурне рішення, а не недогляд: сама
- * підписка тепер РЕАЛЬНО перевіряється через Bot API
- * (`check-subscription`, з 24-годинним утриманням — див.
- * subscription_checks), але "розблокування" самого free-майнера все одно
- * лишається клієнтським перемикачем (пауза/відновлення нарахування), не
- * персистентним гаманцем на сервері — його дохід не варто зберігати як
- * реальні гроші, доки в нього немає власного withdrawal-flow. Куплені
- * майнери, навпаки, повністю реальні: список — з `list_user_miners`,
- * покупка — `purchase_miner`, дохід — `claim_miner_income` (див.
- * supabase/migrations/20260818093000_*).
+ * Free-майнер — повністю реальний персистентний рядок `user_miners`
+ * (is_free = true, один на юзера назавжди), так само, як і куплені:
+ * список — з `list_user_miners`, дохід — `claim_miner_income`. Раніше
+ * розблоковувався лише за обов'язкову підписку на канал/канал
+ * транзакцій (реальна перевірка через Bot API, check-subscription) —
+ * цю вимогу прибрано за прямим запитом: `ensure_free_miner` тепер
+ * створює його одразу активним, ніякої перевірки підписки більше не
+ * викликається.
  */
 export function UserStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -98,11 +87,6 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
   const [balanceUsd, setBalanceUsdState] = useState(0)
   const [miners, setMiners] = useState<UserMiner[]>([])
   const [loadingMiners, setLoadingMiners] = useState(false)
-  const [subscription, setSubscription] = useState<SubscriptionStatus>({
-    channel: false,
-    tx: false,
-  })
-  const [checkingSubscription, setCheckingSubscription] = useState(false)
 
   // Дзеркалить balanceUsd, але читається/пишеться СИНХРОННО — інакше
   // подвійний тап встиг би прочитати старе значення зі стану React ДВІЧІ
@@ -180,18 +164,6 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const refreshSubscription = useCallback(async () => {
-    setCheckingSubscription(true)
-    haptic.impact('light')
-    try {
-      const status = await checkSubscription()
-      setSubscription(status)
-      haptic.notification(status.channel && status.tx ? 'success' : 'warning')
-    } finally {
-      setCheckingSubscription(false)
-    }
-  }, [])
-
   // Фонова синхронізація профілю/майнерів — без цього баланс/прогрес на
   // екрані міг "розсинхронитись" із реальним сервером: усе, що зараховується
   // НЕ клієнтським екшеном самого користувача (реферальний бонус від
@@ -260,9 +232,6 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
         setBalanceUsd(balanceRef.current - amount)
         return true
       },
-      subscription,
-      checkingSubscription,
-      refreshSubscription,
       claimTaskReward: async (taskId) => {
         const result = await claimTaskRewardRpc(taskId)
         if (!result.success) return { success: false, error: result.error }
@@ -279,9 +248,6 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
       miners,
       loadingMiners,
       refreshMiners,
-      subscription,
-      checkingSubscription,
-      refreshSubscription,
     ],
   )
 

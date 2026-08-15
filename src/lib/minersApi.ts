@@ -88,10 +88,12 @@ export async function ensureFreeMinerRpc(): Promise<UserMiner | null> {
 }
 
 /**
- * Пауза/відновлення free-майнера НА СЕРВЕРІ (RPC `set_free_miner_active`) —
- * викликається услід за реальним статусом підписки (checkSubscription).
- * На відміну від старих клієнтських pauseMiner/resumeMiner, стан
- * лишається персистентним і не скидається при розмонтуванні MiningTab.
+ * Пауза/відновлення free-майнера НА СЕРВЕРІ (RPC `set_free_miner_active`).
+ * Наразі нічого в клієнтському коді це не викликає — обов'язкову
+ * підписку, яка раніше вмикала/вимикала free-майнер цим шляхом,
+ * прибрано (ensure_free_miner створює його одразу активним). Лишено як
+ * готовий будівельний блок — напр. для майбутньої адмінської "заморозки"
+ * конкретного акаунту.
  */
 export async function setFreeMinerActiveRpc(active: boolean): Promise<UserMiner | null> {
   const initData = getInitDataOrNull()
