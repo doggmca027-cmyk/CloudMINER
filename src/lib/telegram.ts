@@ -136,9 +136,27 @@ export function getTelegramUser(): TelegramUser | null {
   return getTelegramWebApp()?.initDataUnsafe.user ?? null
 }
 
-/** Параметр запуску (start_param), напр. реферальний код. */
+/**
+ * Параметр запуску (start_param), напр. реферальний код.
+ *
+ * Основне джерело — `initDataUnsafe.start_param` (офіційний спосіб). Але
+ * додатково перевіряємо `tgWebAppStartParam` у query/hash самого URL —
+ * Telegram Web / деякі версії клієнта передають той самий параметр і
+ * туди при відкритті через `?startapp=`, а WebApp SDK не завжди встигає
+ * розпарсити `initDataUnsafe` синхронно до першого рендера. Захисний
+ * резерв, що нічого не коштує, якщо основне джерело вже спрацювало.
+ */
 export function getStartParam(): string | null {
-  return getTelegramWebApp()?.initDataUnsafe.start_param ?? null
+  const fromWebApp = getTelegramWebApp()?.initDataUnsafe.start_param
+  if (fromWebApp) return fromWebApp
+
+  if (typeof window === 'undefined') return null
+  const fromQuery = new URLSearchParams(window.location.search).get('tgWebAppStartParam')
+  if (fromQuery) return fromQuery
+
+  const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
+  const fromHash = new URLSearchParams(hash).get('tgWebAppStartParam')
+  return fromHash || null
 }
 
 type ImpactStyle = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
