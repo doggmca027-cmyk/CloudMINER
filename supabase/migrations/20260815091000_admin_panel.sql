@@ -773,18 +773,19 @@ grant execute on function public.admin_delete_task(bigint, uuid) to anon, authen
 update public.tasks set verification_type = 'subscription' where verification_type is null or verification_type = 'click';
 
 -- ============================================================================
--- Bootstrap: перший адмін
+-- Bootstrap: перший (і єдиний) адмін
 -- ============================================================================
--- Ставимо is_admin = true конкретним telegram_id, створюючи рядок
--- користувача, якщо він ще жодного разу не відкривав застосунок.
--- 6288342755 — реальний адмін проєкту.
--- 999000111 — dev-заглушка (getTelegramUser fallback поза Telegram, лише
--- коли import.meta.env.DEV) — зручно для локального тестування адмінки.
+-- Ставимо is_admin = true РІВНО одному telegram_id — 6288342755, реальному
+-- власнику проєкту. Адмінка не повинна бути доступна нікому іншому,
+-- створюючи рядок користувача, якщо він ще жодного разу не відкривав
+-- застосунок.
+--
+-- 999000111 (dev-заглушка, getTelegramUser fallback поза Telegram, лише
+-- коли import.meta.env.DEV) свого часу теж отримувала is_admin=true "для
+-- зручності локального тестування" — прибрано в
+-- 20260819090000_admin_only_real_owner.sql. Права адміна: рівно один
+-- акаунт, ніяких винятків для зручності розробки.
 
 insert into public.users (telegram_id, first_name, referral_code, is_admin)
 values (6288342755, 'Admin', substr(md5(random()::text || '6288342755'), 1, 8), true)
-on conflict on constraint users_telegram_id_key do update set is_admin = true;
-
-insert into public.users (telegram_id, first_name, referral_code, is_admin)
-values (999000111, 'Dev Admin', substr(md5(random()::text || '999000111'), 1, 8), true)
 on conflict on constraint users_telegram_id_key do update set is_admin = true;
