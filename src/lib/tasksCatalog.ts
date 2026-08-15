@@ -18,6 +18,7 @@ export const PARTNER_TASKS: Task[] = [
     rewardCoin: 0,
     actionUrl: 'https://t.me/alpha_crypto_signals_demo',
     status: 'available',
+    verificationType: 'subscription',
     isActive: true,
     sortOrder: 0,
   },
@@ -31,6 +32,7 @@ export const PARTNER_TASKS: Task[] = [
     rewardCoin: 0,
     actionUrl: 'https://t.me/crypto_news_hub_demo',
     status: 'available',
+    verificationType: 'subscription',
     isActive: true,
     sortOrder: 1,
   },
@@ -44,6 +46,7 @@ export const PARTNER_TASKS: Task[] = [
     rewardCoin: 0,
     actionUrl: 'https://t.me/ambassador_club_demo',
     status: 'available',
+    verificationType: 'subscription',
     isActive: true,
     sortOrder: 2,
   },
@@ -58,6 +61,7 @@ interface TaskRow {
   reward_usd: number | string
   reward_coin: number | string
   action_url: string | null
+  verification_type?: Task['verificationType']
   is_active: boolean
   sort_order: number
 }
@@ -73,6 +77,7 @@ function mapTaskRow(row: TaskRow): Task {
     rewardCoin: Number(row.reward_coin),
     actionUrl: row.action_url ?? undefined,
     status: 'available',
+    verificationType: row.verification_type ?? 'subscription',
     isActive: row.is_active,
     sortOrder: row.sort_order,
   }
@@ -88,7 +93,9 @@ function mapTaskRow(row: TaskRow): Task {
 export async function fetchActiveTasks(): Promise<Task[]> {
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, type, title, description, icon_url, reward_usd, reward_coin, action_url, is_active, sort_order')
+    .select(
+      'id, type, title, description, icon_url, reward_usd, reward_coin, action_url, verification_type, is_active, sort_order',
+    )
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
 
@@ -103,15 +110,16 @@ export async function fetchActiveTasks(): Promise<Task[]> {
 }
 
 interface UserTaskRow extends TaskRow {
-  status: 'claimed' | 'available'
+  status: 'claimed' | 'pending' | 'available'
 }
 
 /**
  * Те саме, що {@link fetchActiveTasks}, але з РЕАЛЬНИМ статусом виконання
- * поточним користувачем (`status: 'claimed' | 'available'`) через RPC
- * `list_user_tasks` — на відміну від старого клієнтського
- * `completedTaskIds`, цей статус переживає перезавантаження застосунку,
- * бо зберігається в таблиці `user_tasks`.
+ * поточним користувачем (`status: 'claimed' | 'pending' | 'available'`)
+ * через RPC `list_user_tasks` — 'pending' означає, що Bot API щойно
+ * підтвердив підписку і йде 24-годинне очікування на нагороду (див.
+ * subscription_checks). На відміну від старого клієнтського
+ * completedTaskIds, цей статус переживає перезавантаження застосунку.
  */
 export async function fetchUserTasks(): Promise<Task[]> {
   const initData = getInitDataOrNull()
@@ -139,7 +147,7 @@ export interface ClaimTaskResult {
   error?: string
 }
 
-/** Одноразова винагорода за завдання — реально нараховує на сервері (RPC `claim_task_reward`). */
+/** Миттєва винагорода за 'click'-завдання — реально нараховує на сервері (RPC `claim_task_reward`). */
 export async function claimTaskRewardRpc(taskId: string): Promise<ClaimTaskResult> {
   const initData = getInitDataOrNull()
   if (!initData) return { success: false, error: 'no_telegram_user' }

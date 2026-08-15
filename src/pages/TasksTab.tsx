@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUserState } from '../context/UserStateContext'
-import { REQUIRED_LINKS, verifyTaskSubscription } from '../lib/subscription'
-import { getTelegramUser, haptic, openTelegramLink } from '../lib/telegram'
+import { isFullySubscribed, REQUIRED_LINKS, verifyTaskSubscription } from '../lib/subscription'
+import { haptic, openTelegramLink } from '../lib/telegram'
 import { fetchUserTasks, PARTNER_TASKS } from '../lib/tasksCatalog'
 import type { Task } from '../types'
 import SubscriptionRow from '../components/SubscriptionRow'
@@ -16,10 +16,10 @@ export default function TasksTab() {
   const [tasks, setTasks] = useState<Task[]>(PARTNER_TASKS)
 
   // Живий каталог завдань + РЕАЛЬНИЙ статус виконання поточним користувачем
-  // (з таблиці user_tasks, через RPC list_user_tasks) — на відміну від
-  // колишнього клієнтського completedTaskIds, цей статус переживає
-  // перезавантаження застосунку. Хардкод PARTNER_TASKS лишається як фолбек
-  // на час завантаження й на випадок помилки/порожньої таблиці.
+  // (з таблиці user_tasks/subscription_checks, через RPC list_user_tasks) —
+  // на відміну від колишнього клієнтського completedTaskIds, цей статус
+  // переживає перезавантаження застосунку. Хардкод PARTNER_TASKS лишається
+  // як фолбек на час завантаження й на випадок помилки/порожньої таблиці.
   useEffect(() => {
     let cancelled = false
     void fetchUserTasks().then((loaded) => {
@@ -30,30 +30,41 @@ export default function TasksTab() {
     }
   }, [])
 
-  const subscribed = subscription.channel && subscription.chat
+  const subscribed = isFullySubscribed(subscription)
 
-  async function handleVerifyPartnerTask(taskId: string, actionUrl: string) {
-    setVerifyingTaskId(taskId)
+  /**
+   * 'click'-завдання — миттєва нагорода (claim_task_reward), як і раніше.
+   * 'subscription'-завдання — РЕАЛЬНА перевірка Bot API
+   * (verifyTaskSubscription): якщо підписаний ЗАРАЗ, сервер сам реєструє
+   * 24-годинне очікування (статус 'pending') і видасть нагороду пізніше,
+   * лише якщо користувач не відпишеться. Ніякої миттєвої виплати тут
+   * більше немає — раніше нагороду можна було забрати й одразу
+   * відписатись.
+   */
+  async function handleVerifyPartnerTask(task: Task) {
+    setVerifyingTaskId(task.id)
     haptic.impact('light')
     try {
-      const telegramId = getTelegramUser()?.id ?? 0
-      const isSubscribed = await verifyTaskSubscription(actionUrl, telegramId)
-      if (!isSubscribed) {
-        haptic.notification('warning')
+      if (task.verificationType === 'click') {
+        const result = await claimTaskReward(task.id)
+        if (result.success) {
+          setTasks((list) => list.map((t) => (t.id === task.id ? { ...t, status: 'claimed' } : t)))
+          haptic.notification('success')
+        } else {
+          if (result.error === 'already_claimed') {
+            setTasks((list) => list.map((t) => (t.id === task.id ? { ...t, status: 'claimed' } : t)))
+          }
+          haptic.notification('error')
+        }
         return
       }
 
-      const result = await claimTaskReward(taskId)
-      if (result.success) {
-        setTasks((list) => list.map((t) => (t.id === taskId ? { ...t, status: 'claimed' } : t)))
+      const isSubscribed = await verifyTaskSubscription(task.id)
+      if (isSubscribed) {
+        setTasks((list) => list.map((t) => (t.id === task.id ? { ...t, status: 'pending' } : t)))
         haptic.notification('success')
       } else {
-        // 'already_claimed' — заявку вже видано раніше (напр. в іншій
-        // сесії) — просто підтягуємо реальний стан замість помилки.
-        if (result.error === 'already_claimed') {
-          setTasks((list) => list.map((t) => (t.id === taskId ? { ...t, status: 'claimed' } : t)))
-        }
-        haptic.notification('error')
+        haptic.notification('warning')
       }
     } finally {
       setVerifyingTaskId(null)
@@ -78,6 +89,13 @@ export default function TasksTab() {
             subscribed={subscription.chat}
             onOpen={() => openTelegramLink(REQUIRED_LINKS.chat)}
           />
+          {REQUIRED_LINKS.tx && (
+            <SubscriptionRow
+              label={t('mining.freeMiner.tx')}
+              subscribed={subscription.tx}
+              onOpen={() => openTelegramLink(REQUIRED_LINKS.tx)}
+            />
+          )}
         </div>
 
         <button
@@ -104,9 +122,10 @@ export default function TasksTab() {
                 key={task.id}
                 task={task}
                 completed={task.status === 'claimed'}
+                pending={task.status === 'pending'}
                 verifying={verifyingTaskId === task.id}
                 onOpenLink={() => task.actionUrl && openTelegramLink(task.actionUrl)}
-                onVerify={() => handleVerifyPartnerTask(task.id, task.actionUrl ?? task.id)}
+                onVerify={() => handleVerifyPartnerTask(task)}
               />
             ))}
           </div>

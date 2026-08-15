@@ -69,7 +69,9 @@
     "mandatoryTitle": "Mandatory tasks",
     "mandatorySubtitle": "Required for the free miner to work",
     "mandatoryWarning": "Without the channel and chat subscription, earnings are frozen",
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "pending": "Pending 24h",
+    "pendingNotice": "Subscription confirmed. The reward arrives automatically in 24 hours if you don't unsubscribe."
   },
   "friends": {
     "yourLink": "Your referral link",
@@ -158,6 +160,7 @@
       "frozen": "Frozen",
       "channel": "Official channel",
       "chat": "Community chat",
+      "tx": "Transactions channel",
       "subscribeToActivate": "Subscribe to the channel and chat to activate earnings",
       "checkSubscription": "Check subscription",
       "checking": "Checking..."

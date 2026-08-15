@@ -1,47 +1,85 @@
 import { supabase } from './supabase'
+import { getInitDataOrNull } from './telegram'
 
 /** Статус підписки на обов'язкові ресурси спільноти. */
 export interface SubscriptionStatus {
   channel: boolean
   chat: boolean
+  /** Канал транзакцій — обов'язкова підписка нарівні з channel/chat. */
+  tx: boolean
 }
 
-/** Посилання на офіційний канал і чат, підписка на які активує free-майнер. */
+/**
+ * Посилання на офіційний канал, чат і канал транзакцій, підписка на які
+ * активує free-майнер. `tx` — опційний `VITE_TRANSACTIONS_CHANNEL_LINK`
+ * (порожньо, доки не налаштовано — той самий патерн, що й
+ * VITE_DEPOSIT_ADDRESS_TON / VITE_SUPPORT_TELEGRAM_LINK: UI ховає
+ * посилання, а не показує фейкове).
+ */
 export const REQUIRED_LINKS = {
   channel: 'https://t.me/cloudminer_channel',
   chat: 'https://t.me/cloudminer_chat',
+  tx: (import.meta.env.VITE_TRANSACTIONS_CHANNEL_LINK as string | undefined) || '',
 }
 
 const MOCK_SUBSCRIBED_KEY = 'cloudminer:mockSubscribed'
 
+interface CheckSubscriptionResponse {
+  subscribed: boolean
+  pending?: boolean
+  rewardUsd?: number
+  error?: string
+}
+
 /**
- * Перевіряє підписку користувача на офіційний канал і чат.
- *
- * Клієнт не може перевірити членство в Telegram-каналі напряму (немає
- * bot-токена), тож у проді це має робити Supabase Edge Function
- * `check-subscription`, яка звертається до Telegram Bot API (getChatMember).
- * Поки функція не розгорнута — повертаємо безпечний фолбек.
+ * Перевіряє членство в одній конкретній цілі через Edge Function
+ * `check-subscription` (РЕАЛЬНИЙ Telegram Bot API `getChatMember` —
+ * `targetKey` ∈ {'mandatory:channel', 'mandatory:chat', 'mandatory:tx',
+ * `task:<uuid>`}). При успіху сервер сам реєструє 24-годинну перевірку
+ * утримання підписки (нагорода видається пізніше, окремою плановою
+ * функцією, лише якщо користувач не відписався).
  */
-export async function checkSubscription(telegramId: number): Promise<SubscriptionStatus> {
+async function checkTarget(targetKey: string): Promise<boolean> {
+  const initData = getInitDataOrNull()
+  if (!initData) {
+    // Поза Telegram (напр. `npm run dev`) підписаного initData нема —
+    // реальну перевірку виконати неможливо. У DEV дозволяємо локально
+    // імітувати підписку, щоб перевірити UI без бекенда.
+    return import.meta.env.DEV && localStorage.getItem(MOCK_SUBSCRIBED_KEY) === '1'
+  }
+
   try {
-    const { data, error } = await supabase.functions.invoke<SubscriptionStatus>(
+    const { data, error } = await supabase.functions.invoke<CheckSubscriptionResponse>(
       'check-subscription',
-      { body: { telegramId } },
+      { body: { initData, targetKey } },
     )
     if (error || !data) throw error ?? new Error('check-subscription: порожня відповідь')
-    return data
-  } catch {
+    return data.subscribed
+  } catch (err) {
     // eslint-disable-next-line no-console
-    console.warn(
-      '[subscription] Edge Function "check-subscription" недоступна, використано фолбек.',
-    )
-    if (import.meta.env.DEV) {
-      // У розробці дозволяємо локально імітувати підписку, щоб перевірити UI без бекенда.
-      const mocked = localStorage.getItem(MOCK_SUBSCRIBED_KEY) === '1'
-      return { channel: mocked, chat: mocked }
-    }
-    return { channel: false, chat: false }
+    console.warn(`[subscription] check-subscription не вдався для "${targetKey}":`, err)
+    return import.meta.env.DEV && localStorage.getItem(MOCK_SUBSCRIBED_KEY) === '1'
   }
+}
+
+/** Перевіряє всі 3 обов'язкові підписки одразу (канал, чат, канал транзакцій). */
+export async function checkSubscription(): Promise<SubscriptionStatus> {
+  const [channel, chat, tx] = await Promise.all([
+    checkTarget('mandatory:channel'),
+    checkTarget('mandatory:chat'),
+    checkTarget('mandatory:tx'),
+  ])
+  return { channel, chat, tx }
+}
+
+/**
+ * Чи виконані ВСІ обов'язкові підписки. Канал транзакцій вимагається,
+ * лише якщо для нього налаштоване публічне посилання
+ * (`VITE_TRANSACTIONS_CHANNEL_LINK`) — доки його немає, користувачу
+ * нема куди підписатись, тож блокувати free-майнер цією вимогою не варто.
+ */
+export function isFullySubscribed(status: SubscriptionStatus): boolean {
+  return status.channel && status.chat && (status.tx || !REQUIRED_LINKS.tx)
 }
 
 /** Dev-заглушка: імітує підписку локально, поки не розгорнуто Edge Function. */
@@ -52,29 +90,11 @@ export function setMockSubscribed(value: boolean): void {
 }
 
 /**
- * Перевіряє підписку на один довільний партнерський ресурс (для завдань
- * від амбасадорів/партнерів у TasksTab). Той самий принцип, що й
- * {@link checkSubscription}: у проді — Edge Function `check-subscription`
- * з переданою ціллю, поки її немає — безпечний фолбек.
+ * Перевіряє підписку на один партнерський/амбассадорський канал завдання
+ * (TasksTab, `verification_type = 'subscription'`). Той самий принцип, що
+ * й {@link checkSubscription}: реальна перевірка Bot API + реєстрація
+ * 24-годинного утримання, нагорода — окремою плановою функцією.
  */
-export async function verifyTaskSubscription(target: string, telegramId: number): Promise<boolean> {
-  try {
-    const { data, error } = await supabase.functions.invoke<{ subscribed: boolean }>(
-      'check-subscription',
-      { body: { telegramId, target } },
-    )
-    if (error || !data) throw error ?? new Error('check-subscription: порожня відповідь')
-    return data.subscribed
-  } catch {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[subscription] Edge Function "check-subscription" недоступна для цілі "${target}", використано фолбек.`,
-    )
-    if (import.meta.env.DEV) {
-      // Той самий dev-перемикач, що й для обов'язкової підписки — цього
-      // достатньо для локальної перевірки UI без окремого стану на завдання.
-      return localStorage.getItem(MOCK_SUBSCRIBED_KEY) === '1'
-    }
-    return false
-  }
+export async function verifyTaskSubscription(taskId: string): Promise<boolean> {
+  return checkTarget(`task:${taskId}`)
 }

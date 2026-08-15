@@ -69,7 +69,9 @@
     "mandatoryTitle": "Tareas obligatorias",
     "mandatorySubtitle": "Necesarias para que funcione el minero gratuito",
     "mandatoryWarning": "Sin suscripción al canal y al chat, las ganancias están congeladas",
-    "subscribe": "Suscribirse"
+    "subscribe": "Suscribirse",
+    "pending": "Pendiente 24h",
+    "pendingNotice": "Suscripción confirmada. La recompensa llega automáticamente en 24 horas si no te das de baja."
   },
   "friends": {
     "yourLink": "Tu enlace de referido",
@@ -158,6 +160,7 @@
       "frozen": "Congelado",
       "channel": "Canal oficial",
       "chat": "Chat de la comunidad",
+      "tx": "Canal de transacciones",
       "subscribeToActivate": "Suscríbete al canal y al chat para activar las ganancias",
       "checkSubscription": "Comprobar suscripción",
       "checking": "Comprobando..."

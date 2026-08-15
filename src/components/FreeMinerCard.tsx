@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { REQUIRED_LINKS, type SubscriptionStatus } from '../lib/subscription'
+import { isFullySubscribed, REQUIRED_LINKS, type SubscriptionStatus } from '../lib/subscription'
 import { openTelegramLink } from '../lib/telegram'
 import SubscriptionRow from './SubscriptionRow'
 
@@ -20,7 +20,7 @@ export default function FreeMinerCard({
   onCheckSubscription,
 }: FreeMinerCardProps) {
   const { t } = useTranslation()
-  const subscribed = subscription.channel && subscription.chat
+  const subscribed = isFullySubscribed(subscription)
 
   return (
     <div className="glass-card p-4">
@@ -47,6 +47,13 @@ export default function FreeMinerCard({
           subscribed={subscription.chat}
           onOpen={() => openTelegramLink(REQUIRED_LINKS.chat)}
         />
+        {REQUIRED_LINKS.tx && (
+          <SubscriptionRow
+            label={t('mining.freeMiner.tx')}
+            subscribed={subscription.tx}
+            onOpen={() => openTelegramLink(REQUIRED_LINKS.tx)}
+          />
+        )}
       </div>
 
       {!subscribed && (

@@ -10,6 +10,7 @@ import {
   resumeMiner,
 } from '../lib/mining'
 import { haptic } from '../lib/telegram'
+import { isFullySubscribed } from '../lib/subscription'
 import { useUserState } from '../context/UserStateContext'
 import FreeMinerCard from '../components/FreeMinerCard'
 import MinerCard from '../components/MinerCard'
@@ -35,7 +36,7 @@ export default function MiningTab() {
   // мережевий виклик (RPC), а не миттєва локальна мутація.
   const [claiming, setClaiming] = useState(false)
 
-  const subscribed = subscription.channel && subscription.chat
+  const subscribed = isFullySubscribed(subscription)
 
   useEffect(() => {
     const intervalId = setInterval(() => setNow(Date.now()), 100)

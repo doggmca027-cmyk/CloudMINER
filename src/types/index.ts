@@ -18,8 +18,13 @@ export type TransactionNetwork = 'TON' | 'TON_USDT' | 'TRC20'
 /** Тип завдання. */
 export type TaskType = 'daily' | 'partner' | 'special'
 
-/** Статус виконання завдання користувачем. */
-export type TaskStatus = 'available' | 'in_progress' | 'completed' | 'claimed'
+/**
+ * Статус виконання завдання користувачем. 'pending' — підписка щойно
+ * підтверджена Bot API, але нагорода видається лише через 24 години
+ * утримання (див. subscription_checks) — 'completed' лишається для
+ * майбутнього daily/special use-case, наразі не використовується.
+ */
+export type TaskStatus = 'available' | 'pending' | 'in_progress' | 'completed' | 'claimed'
 
 /** Користувач застосунку (профіль, пов'язаний із Telegram-акаунтом). */
 export interface User {
@@ -126,6 +131,8 @@ export interface Task {
   rewardCoin: number
   actionUrl?: string
   status: TaskStatus
+  /** 'subscription' — нагорода лише через 24г утримання (реальна Bot API перевірка); 'click' — миттєво. */
+  verificationType: TaskVerificationType
   isActive: boolean
   sortOrder: number
 }

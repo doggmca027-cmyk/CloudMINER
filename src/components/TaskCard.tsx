@@ -4,13 +4,20 @@ import type { Task } from '../types'
 interface TaskCardProps {
   task: Task
   completed: boolean
+  /** Підписку щойно підтверджено Bot API, йде 24-годинне очікування на нагороду (subscription_checks). */
+  pending: boolean
   verifying: boolean
   onOpenLink: () => void
   onVerify: () => void
 }
 
-/** Картка партнерського завдання: підписатись → перевірити → отримати винагороду. */
-export default function TaskCard({ task, completed, verifying, onOpenLink, onVerify }: TaskCardProps) {
+/**
+ * Картка партнерського завдання: підписатись → перевірити → отримати
+ * винагороду. Для `verification_type: 'subscription'` між "перевірити" й
+ * "отримати" тепер є 24-годинне очікування (pending) — сервер видасть
+ * нагороду сам, якщо користувач не відпишеться (див. subscription_checks).
+ */
+export default function TaskCard({ task, completed, pending, verifying, onOpenLink, onVerify }: TaskCardProps) {
   const { t } = useTranslation()
 
   return (
@@ -36,7 +43,7 @@ export default function TaskCard({ task, completed, verifying, onOpenLink, onVer
         <button
           type="button"
           onClick={onOpenLink}
-          disabled={completed}
+          disabled={completed || pending}
           className="rounded-xl border border-cyan-500/30 py-2 text-xs font-medium text-neon-glow transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('tasks.subscribe')}
@@ -44,16 +51,19 @@ export default function TaskCard({ task, completed, verifying, onOpenLink, onVer
         <button
           type="button"
           onClick={onVerify}
-          disabled={completed || verifying}
+          disabled={completed || pending || verifying}
           className="rounded-xl bg-neon-gradient py-2 text-xs font-semibold text-slate-950 transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           {completed
             ? t('tasks.completed')
-            : verifying
-              ? t('mining.freeMiner.checking')
-              : t('tasks.check')}
+            : pending
+              ? t('tasks.pending')
+              : verifying
+                ? t('mining.freeMiner.checking')
+                : t('tasks.check')}
         </button>
       </div>
+      {pending && <p className="mt-2 text-[11px] text-slate-400">{t('tasks.pendingNotice')}</p>}
     </div>
   )
 }

@@ -11,7 +11,7 @@ import type { MinerTemplate, User, UserMiner } from '../types'
 import { claimMinerIncomeRpc, listUserMiners, purchaseMinerRpc } from '../lib/minersApi'
 import { claimTaskRewardRpc } from '../lib/tasksCatalog'
 import { checkSubscription, type SubscriptionStatus } from '../lib/subscription'
-import { getTelegramUser, haptic } from '../lib/telegram'
+import { haptic } from '../lib/telegram'
 import { loadUserProfile } from '../lib/userProfile'
 
 export interface ActionResult {
@@ -70,15 +70,18 @@ interface UserStateContextValue {
 const UserStateContext = createContext<UserStateContextValue | null>(null)
 
 /**
- * ⚠️ Free-майнер (виданий за підписку на офіційний канал/чат, не за
- * депозит) і далі живе ЛИШЕ в пам'яті MiningTab, не в цій таблиці —
- * навмисне архітектурне рішення, а не недогляд: його "розблокування" зараз
- * ніяк криптографічно не перевіряється (Edge Function `check-subscription`
- * ще не розгорнута — checkSubscription/verifyTaskSubscription повертають
- * безпечний фолбек), тож зберігати його дохід як реальні гроші на сервері
- * було б передчасно. Куплені майнери, навпаки, тепер повністю реальні:
- * список — з `list_user_miners`, покупка — `purchase_miner`, дохід —
- * `claim_miner_income` (див. supabase/migrations/20260818093000_*).
+ * ⚠️ Free-майнер (виданий за підписку на офіційний канал/чат/канал
+ * транзакцій, не за депозит) і далі живе ЛИШЕ в пам'яті MiningTab, не в
+ * цій таблиці — навмисне архітектурне рішення, а не недогляд: сама
+ * підписка тепер РЕАЛЬНО перевіряється через Bot API
+ * (`check-subscription`, з 24-годинним утриманням — див.
+ * subscription_checks), але "розблокування" самого free-майнера все одно
+ * лишається клієнтським перемикачем (пауза/відновлення нарахування), не
+ * персистентним гаманцем на сервері — його дохід не варто зберігати як
+ * реальні гроші, доки в нього немає власного withdrawal-flow. Куплені
+ * майнери, навпаки, повністю реальні: список — з `list_user_miners`,
+ * покупка — `purchase_miner`, дохід — `claim_miner_income` (див.
+ * supabase/migrations/20260818093000_*).
  */
 export function UserStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -131,10 +134,9 @@ export function UserStateProvider({ children }: { children: ReactNode }) {
     setCheckingSubscription(true)
     haptic.impact('light')
     try {
-      const telegramId = getTelegramUser()?.id ?? 0
-      const status = await checkSubscription(telegramId)
+      const status = await checkSubscription()
       setSubscription(status)
-      haptic.notification(status.channel && status.chat ? 'success' : 'warning')
+      haptic.notification(status.channel && status.chat && status.tx ? 'success' : 'warning')
     } finally {
       setCheckingSubscription(false)
     }

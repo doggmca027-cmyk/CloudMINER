@@ -69,7 +69,9 @@
     "mandatoryTitle": "Misi wajib",
     "mandatorySubtitle": "Diperlukan agar miner gratis berfungsi",
     "mandatoryWarning": "Tanpa berlangganan channel dan chat, pendapatan dibekukan",
-    "subscribe": "Berlangganan"
+    "subscribe": "Berlangganan",
+    "pending": "Menunggu 24j",
+    "pendingNotice": "Langganan terkonfirmasi. Hadiah akan masuk otomatis dalam 24 jam jika Anda tidak berhenti berlangganan."
   },
   "friends": {
     "yourLink": "Tautan referral Anda",
@@ -158,6 +160,7 @@
       "frozen": "Dibekukan",
       "channel": "Channel resmi",
       "chat": "Chat komunitas",
+      "tx": "Channel transaksi",
       "subscribeToActivate": "Berlangganan channel dan chat untuk mengaktifkan pendapatan",
       "checkSubscription": "Periksa langganan",
       "checking": "Memeriksa..."
