@@ -11,9 +11,9 @@ import App from './App.tsx'
 
 initTelegramWebApp()
 
-// TODO: public/tonconnect-manifest.json містить заглушкові url/iconUrl —
-// замінити на реальний домен застосунку перед продом (гаманці TON
-// перевіряють доступність цього маніфесту за адресою деплою).
+// public/tonconnect-manifest.json посилається на реальний домен
+// (www.cloudminer.site) — гаманці TON перевіряють доступність цього
+// маніфесту за адресою деплою.
 const tonConnectManifestUrl = new URL('/tonconnect-manifest.json', window.location.href).toString()
 
 createRoot(document.getElementById('root')!).render(
