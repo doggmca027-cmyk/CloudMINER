@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useUserState } from '../context/UserStateContext'
 import { haptic } from '../lib/telegram'
+import { parseLocaleNumber } from '../lib/number'
 import { MIN_DEPOSIT_USD } from '../lib/deposits'
 import {
   MIN_WITHDRAWAL_USD,
@@ -39,7 +40,7 @@ export default function WithdrawPanel() {
   // однаково перевірить deposit-lock ще раз на сервері.
   const isWithdrawalLocked = user !== null && !user.hasCompletedDeposit
 
-  const amountNumber = Number(amount)
+  const amountNumber = parseLocaleNumber(amount)
   const hasValidAmount = Number.isFinite(amountNumber) && amountNumber >= MIN_WITHDRAWAL_USD
   const hasEnoughBalance = hasValidAmount && amountNumber <= balanceUsd
   const hasValidAddress = address.trim().length > 0 && isValidWithdrawalAddress(address, NETWORK)

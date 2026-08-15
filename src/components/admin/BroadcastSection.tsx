@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { broadcastMessage, fetchBroadcastRecipientCount } from '../../lib/admin'
-import { adminErrorKey } from '../../lib/adminErrors'
+import { adminErrorMessage } from '../../lib/adminErrors'
 import { haptic } from '../../lib/telegram'
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error'
@@ -63,7 +63,7 @@ export default function BroadcastSection() {
       haptic.notification('success')
     } catch (err) {
       setStatus('error')
-      setErrorMessage(t(adminErrorKey(err instanceof Error ? err.message : String(err))))
+      setErrorMessage(adminErrorMessage(err instanceof Error ? err.message : String(err), t))
       haptic.notification('error')
     }
   }

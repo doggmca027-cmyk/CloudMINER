@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react'
 import { useTonPrice } from '../lib/tonPrice'
 import { getAppSettings, calcDepositBonus } from '../lib/appSettings'
+import { parseLocaleNumber } from '../lib/number'
 import { haptic } from '../lib/telegram'
 import {
   MIN_DEPOSIT_USD,
@@ -61,7 +62,7 @@ export default function DepositPanel() {
   }, [])
 
   const telegramId = getDepositMemoTelegramId()
-  const usdtAmountNumber = Number(usdtAmount)
+  const usdtAmountNumber = parseLocaleNumber(usdtAmount)
   const isBelowMinimum = Number.isFinite(usdtAmountNumber) && usdtAmountNumber < MIN_DEPOSIT_USD
   const isMemoNetwork = MEMO_NETWORKS.includes(network)
   const isExactAmountNetwork = EXACT_AMOUNT_NETWORKS.includes(network)
@@ -69,13 +70,13 @@ export default function DepositPanel() {
 
   function handleTonChange(value: string) {
     setTonAmount(value)
-    const parsed = Number(value)
+    const parsed = parseLocaleNumber(value)
     setUsdtAmount(Number.isFinite(parsed) ? (parsed * rate).toFixed(2) : '')
   }
 
   function handleUsdtChange(value: string) {
     setUsdtAmount(value)
-    const parsed = Number(value)
+    const parsed = parseLocaleNumber(value)
     setTonAmount(Number.isFinite(parsed) && rate > 0 ? (parsed / rate).toFixed(4) : '')
   }
 

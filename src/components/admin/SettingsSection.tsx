@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAppSettings } from '../../lib/appSettings'
 import { updateAppSettings } from '../../lib/admin'
-import { adminErrorKey } from '../../lib/adminErrors'
+import { adminErrorMessage } from '../../lib/adminErrors'
+import { parseLocaleNumber } from '../../lib/number'
 import { haptic } from '../../lib/telegram'
 import type { AppSettings } from '../../types'
 
@@ -62,7 +63,7 @@ export default function SettingsSection() {
       haptic.notification('success')
     } catch (err) {
       setStatus('error')
-      setErrorMessage(t(adminErrorKey(err instanceof Error ? err.message : String(err))))
+      setErrorMessage(adminErrorMessage(err instanceof Error ? err.message : String(err), t))
       haptic.notification('error')
     }
   }
@@ -98,7 +99,7 @@ export default function SettingsSection() {
               value={settings.shopDiscountPercent}
               onChange={(e) => {
                 setStatus('idle')
-                setSettings((s) => ({ ...s, shopDiscountPercent: Number(e.target.value) }))
+                setSettings((s) => ({ ...s, shopDiscountPercent: parseLocaleNumber(e.target.value) }))
               }}
               className="w-full rounded-lg border border-cyan-500/20 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500/50"
             />
@@ -144,7 +145,7 @@ export default function SettingsSection() {
               value={settings.depositBonusPercent}
               onChange={(e) => {
                 setStatus('idle')
-                setSettings((s) => ({ ...s, depositBonusPercent: Number(e.target.value) }))
+                setSettings((s) => ({ ...s, depositBonusPercent: parseLocaleNumber(e.target.value) }))
               }}
               className="w-full rounded-lg border border-cyan-500/20 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-500/50"
             />

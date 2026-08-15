@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { issueManualDeposit } from '../../lib/admin'
-import { adminErrorKey } from '../../lib/adminErrors'
+import { adminErrorMessage } from '../../lib/adminErrors'
+import { parseLocaleNumber } from '../../lib/number'
 import { haptic } from '../../lib/telegram'
 import type { AdminCreditType } from '../../types'
 
@@ -18,7 +19,7 @@ export default function ManualDepositSection() {
   const [newBalance, setNewBalance] = useState<number | null>(null)
 
   const telegramId = Number(telegramIdInput)
-  const amount = Number(amountInput)
+  const amount = parseLocaleNumber(amountInput)
   const canSubmit =
     Number.isFinite(telegramId) &&
     telegramId > 0 &&
@@ -40,7 +41,7 @@ export default function ManualDepositSection() {
       haptic.notification('success')
     } catch (err) {
       setStatus('error')
-      setErrorMessage(t(adminErrorKey(err instanceof Error ? err.message : String(err))))
+      setErrorMessage(adminErrorMessage(err instanceof Error ? err.message : String(err), t))
       haptic.notification('error')
     }
   }

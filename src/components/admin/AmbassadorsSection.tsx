@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchAmbassadors, setAmbassador } from '../../lib/admin'
-import { adminErrorKey } from '../../lib/adminErrors'
+import { adminErrorMessage } from '../../lib/adminErrors'
 import { haptic } from '../../lib/telegram'
 import type { AmbassadorStats } from '../../types'
 
@@ -48,7 +48,7 @@ export default function AmbassadorsSection() {
       await reload()
     } catch (err) {
       setStatus('error')
-      setErrorMessage(t(adminErrorKey(err instanceof Error ? err.message : String(err))))
+      setErrorMessage(adminErrorMessage(err instanceof Error ? err.message : String(err), t))
       haptic.notification('error')
     }
   }

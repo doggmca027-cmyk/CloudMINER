@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createAdminTask, deleteAdminTask, fetchAdminTasks, setAdminTaskActive } from '../../lib/admin'
-import { adminErrorKey } from '../../lib/adminErrors'
+import { adminErrorMessage } from '../../lib/adminErrors'
+import { parseLocaleNumber } from '../../lib/number'
 import { haptic } from '../../lib/telegram'
 import type { AdminTask, TaskVerificationType } from '../../types'
 
@@ -37,7 +38,7 @@ export default function TasksSection() {
     void reload()
   }, [reload])
 
-  const rewardNumber = Number(reward)
+  const rewardNumber = parseLocaleNumber(reward)
   const canCreate =
     title.trim().length > 0 &&
     link.trim().length > 0 &&
@@ -60,7 +61,7 @@ export default function TasksSection() {
       await reload()
     } catch (err) {
       setStatus('error')
-      setErrorMessage(t(adminErrorKey(err instanceof Error ? err.message : String(err))))
+      setErrorMessage(adminErrorMessage(err instanceof Error ? err.message : String(err), t))
       haptic.notification('error')
     }
   }
