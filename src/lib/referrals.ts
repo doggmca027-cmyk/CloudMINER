@@ -15,9 +15,9 @@ export const REFERRAL_RATES: Record<1 | 2 | 3, number> = {
 
 /**
  * Витягує telegram_id реферера зі стартового параметра Mini App
- * (`?startapp=ref_123456` або команда боту `/start ref_123456` —
- * в обох випадках Telegram передає значення після `ref_` в
- * `initDataUnsafe.start_param`).
+ * (`?startapp=ref_123456` — Telegram передає значення після `ref_` в
+ * `initDataUnsafe.start_param` ЛИШЕ коли посилання побудоване саме через
+ * `startapp`, див. коментар у {@link buildReferralLink}).
  */
 export function getReferrerTelegramIdFromStartParam(): number | null {
   const startParam = getStartParam()
@@ -30,9 +30,21 @@ export function getReferrerTelegramIdFromStartParam(): number | null {
   return Number.isFinite(telegramId) ? telegramId : null
 }
 
-/** Формує реферальне посилання виду https://t.me/bot_username?start=ref_USERID. */
+/**
+ * Формує реферальне посилання виду https://t.me/bot_username?startapp=ref_USERID.
+ *
+ * ⚠️ Раніше тут був `?start=` — це параметр ЗВИЧАЙНОГО deep-link бота: він
+ * лише надсилає в чат текстову команду `/start ref_123456`, а не запускає
+ * Mini App взагалі (і НЕ потрапляє в `initDataUnsafe.start_param`). У
+ * проєкту немає бот-вебхука, що обробляв би цю команду, тож запрошений
+ * бачив непрочитане повідомлення в чаті, а сам застосунок (через кнопку
+ * меню) відкривався вже БЕЗ жодного параметра — реферал ніколи не
+ * фіксувався. `?startapp=` — правильний, Mini-App-специфічний
+ * deep-link: він одразу відкриває сам застосунок і саме він потрапляє в
+ * `start_param`.
+ */
 export function buildReferralLink(botUsername: string, telegramId: number): string {
-  return `https://t.me/${botUsername}?start=ref_${telegramId}`
+  return `https://t.me/${botUsername}?startapp=ref_${telegramId}`
 }
 
 /** Ділиться реферальним посиланням через нативний діалог пересилки Telegram. */
