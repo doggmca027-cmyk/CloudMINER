@@ -4,8 +4,8 @@ import { getInitDataOrNull } from './telegram'
 /** Мінімальна сума виводу, USDT. Тримати синхронізовано з RPC `request_withdrawal`. */
 export const MIN_WITHDRAWAL_USD = 2
 
-/** Комісія за вивід, частка від суми (0.05 = 5%). Тримати синхронізовано з RPC. */
-export const WITHDRAWAL_FEE_RATE = 0.05
+/** Комісія за вивід, частка від суми (0.10 = 10%). Тримати синхронізовано з RPC. */
+export const WITHDRAWAL_FEE_RATE = 0.1
 
 /** Вивід дозволений лише в мережі TON (USDT-jetton) — TRC-20 прибрано з виводу. */
 export type WithdrawalNetwork = 'TON'
