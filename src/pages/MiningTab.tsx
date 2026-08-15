@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getRatePerSecond, getUnclaimedUsd, isMinerCompleted } from '../lib/mining'
 import { ensureFreeMinerRpc, setFreeMinerActiveRpc } from '../lib/minersApi'
@@ -53,15 +53,19 @@ export default function MiningTab() {
 
   // Заморожує/розморожує free-майнер услід за статусом підписки — тепер
   // теж на сервері (set_free_miner_active), не в локальному стані.
-  // Пропускаємо самий перший рендер (subscribed ще не встиг стати
-  // "справжнім" — початковий false до першої перевірки), щоб не бити
-  // зайвий запит одразу при вході.
-  const didMount = useRef(false)
+  //
+  // ⚠️ РАНІШЕ тут був "пропустити перший рендер" (`didMount`-реф), щоб не
+  // бити зайвий запит одразу при вході — і це був реальний баг: якщо
+  // користувач підтверджував підписку НЕ з цієї вкладки (напр. з
+  // "Задания" — та сама кнопка перевірки на тому самому спільному
+  // `subscription` з контексту), а тоді ВПЕРШЕ за сесію заходив на
+  // "Майнинг", компонент монтувався одразу з subscribed=true, і той
+  // перший (єдиний потрібний!) виклик мовчки пропускався — free-майнер
+  // ніколи не активувався. set_free_miner_active сам по собі
+  // ідемпотентний (повторний виклик із тим самим p_active — no-op),
+  // тож жодної спеціальної обробки першого рендера тут насправді не
+  // потрібно було.
   useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true
-      return
-    }
     void setFreeMinerActiveRpc(subscribed).then(() => refreshMiners())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribed])
